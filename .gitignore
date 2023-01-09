@@ -1,0 +1,4 @@
+# Auto detect text files and perform LF normalization
+* text=auto
+server/node_modules
+server/src/controllers/config.json
