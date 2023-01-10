@@ -132,10 +132,41 @@ export const insertScrobble = async (scrobble: Scrobble) => {
   return res;
 }
 
+export const getLatestScrobbleTimestamp = async () => {
+  const query = {
+    text: 'select timestamp from scrobbles order by timestamp desc limit 1',
+  }
+  const res = await executeQuery(query);
+  return res;
+}
+
+export const rollbackScrobbleImport = async (timestamp: number, scrobbleTimestamp: number) => {
+  let query = {
+    text: 'remove from sync_timestamp where timestamp > $1',
+    values: [timestamp],
+  }
+  const res = await executeQuery(query);
+
+  query = {
+    text: 'remove from scrobbles where timestamp > $1',
+    values: [scrobbleTimestamp],
+  }
+  const res2 = await executeQuery(query);
+  return [res, res2]
+}
+
 export const insertSyncTimestamp = async (timestamp: number) => {
   const query = {
     text: 'INSERT into sync_timestamp(timestamp) VALUES($1)',
     values: [timestamp],
+  }
+  const res = await executeQuery(query);
+  return res;
+}
+
+export const getRecentTimestamp = async () => {
+  const query = {
+    text: 'select timestamp from sync_timestamp order by timestamp desc limit 1',
   }
   const res = await executeQuery(query);
   return res;

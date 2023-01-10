@@ -13,7 +13,8 @@ export interface ILastFMTrack {
     name: string;
     date: {uts: number};
     album: {'#text': string};
-    artist: {'#text': string}
+    artist: {'#text': string};
+    id: string;
     '@attr': {nowplaying: boolean}
 }
 
