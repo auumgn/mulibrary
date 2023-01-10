@@ -1,6 +1,7 @@
 import pg from 'pg'
 import { Album } from '../models/album.model';
 import { Artist } from '../models/artist.model';
+import { Scrobble } from '../models/lastfm.model';
 import { ITrack, Track } from '../models/track.model';
 import * as config from "./config.json";
 const Pool = pg.Pool;
@@ -12,7 +13,7 @@ const pool = new Pool({
   password: config.password,
 })
 
-export const createAlbum = async (album: Album) : Promise<Album | null> => {
+export const createAlbum = async (album: Album): Promise<Album | null> => {
   const existingAlbums = await getAlbumByName(album.name, album.artist.name);
   if (existingAlbums.length !== 0) {
     console.error("Duplicate album", existingAlbums);
@@ -24,7 +25,7 @@ export const createAlbum = async (album: Album) : Promise<Album | null> => {
     }
     console.log('');
     console.log('Creating album', album.name);
-    const res : Album[] = await executeQuery(query);
+    const res: Album[] = await executeQuery(query);
     if (res && res.length > 0) {
       const album = new Album(res[0].artist, res[0].artist_id, res[0].name, res[0].year, res[0].genre, res[0].artwork, res[0].id);
       return album;
@@ -34,7 +35,34 @@ export const createAlbum = async (album: Album) : Promise<Album | null> => {
   }
 }
 
-export const createArtist = async (artist: Artist) : Promise<Artist | null> => {
+export const updateAlbum = async (album: Album): Promise<Album | null> => {
+  
+  const query = {
+    text: 'UPDATE album set (name, artist, year, category, artwork, artist_id) = ($1, $2, $3, $4, $5, $6) where id = $7 RETURNING *',
+    values: [album.name, album.artist.name, album.year, album.artist.category.name, album.artwork, album.artist_id, album.id],
+  }
+  console.log('');
+  console.log('Updating album', album.name);
+  const res: Album[] = await executeQuery(query);
+  if (res && res.length > 0) {
+    const album = new Album(res[0].artist, res[0].artist_id, res[0].name, res[0].year, res[0].genre, res[0].artwork, res[0].id);
+    return album;
+  } else {
+    return null;
+  }
+  
+}
+
+const getAlbumByName = async function (album: string, artist: string) {
+  const query = {
+    text: 'SELECT * from album where name = $1 and artist = $2',
+    values: [album, artist],
+  }
+  const res = await executeQuery(query);
+  return res;
+}
+
+export const createArtist = async (artist: Artist): Promise<Artist | null> => {
   const existingArtists = await getArtistByName(artist.name);
   if (existingArtists.length !== 0) {
     console.error("Duplicate artist", existingArtists);
@@ -56,7 +84,16 @@ export const createArtist = async (artist: Artist) : Promise<Artist | null> => {
   }
 }
 
-export const createTrack = async (track: ITrack) : Promise<Track | null> => {
+const getArtistByName = async function (name: string) {
+  const query = {
+    text: 'SELECT * from artist where name = $1',
+    values: [name],
+  }
+  const res = await executeQuery(query);
+  return res;
+}
+
+export const createTrack = async (track: ITrack): Promise<Track | null> => {
   const existingTracks = await getTrackByName(track.name, track.artist.name, track.album.name);
   if (existingTracks.length !== 0) {
     console.error("Duplicate track", existingTracks);
@@ -77,16 +114,7 @@ export const createTrack = async (track: ITrack) : Promise<Track | null> => {
   }
 }
 
-export const getArtistByName = async function (name: string) {
-  const query = {
-    text: 'SELECT * from artist where name = $1',
-    values: [name],
-  }
-  const res = await executeQuery(query);
-  return res;
-}
-
-export const getTrackByName = async function (name: string, artist: string, album: string) {
+const getTrackByName = async function (name: string, artist: string, album: string) {
   const query = {
     text: 'SELECT * from track where name = $1 and artist = $2 and album = $3',
     values: [name, artist, album],
@@ -95,23 +123,32 @@ export const getTrackByName = async function (name: string, artist: string, albu
   return res;
 }
 
-export const getAlbumByName = async function (album: string, artist: string) {
+export const insertScrobble = async (scrobble: Scrobble) => {
   const query = {
-    text: 'SELECT * from album where name = $1 and artist = $2',
-    values: [album, artist],
+    text: 'INSERT into scrobbles(name, artist, album, timestamp) VALUES($1, $2, $3, $4)',
+    values: [scrobble.name, scrobble.artist, scrobble.album, scrobble.timestamp],
+  }
+  const res = await executeQuery(query);
+  return res;
+}
+
+export const insertSyncTimestamp = async (timestamp: number) => {
+  const query = {
+    text: 'INSERT into sync_timestamp(timestamp) VALUES($1)',
+    values: [timestamp],
   }
   const res = await executeQuery(query);
   return res;
 }
 
 export const deleteTracksAlbumsArtists = async function () {
-  await executeQuery({text: 'DELETE FROM track'});
-  await executeQuery({text: 'DELETE FROM album'});
-  await executeQuery({text: 'DELETE FROM artist'});
+  await executeQuery({ text: 'DELETE FROM track' });
+  await executeQuery({ text: 'DELETE FROM album' });
+  await executeQuery({ text: 'DELETE FROM artist' });
 }
 
 
-const executeQuery = async (query: { text: string, values?: any[] }) : Promise<[] | null> => {
+const executeQuery = async (query: { text: string, values?: any[] }): Promise<[] | null> => {
   const client = await pool.connect()
   try {
     const res = await client.query(query);

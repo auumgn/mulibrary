@@ -9,7 +9,7 @@ export interface IAlbum {
     name?: string;
     year?: number;
     genre?: Genre[] | string[];
-    artwork?: IPicture;
+    artwork?: string[];
     tracks?: Track[];
     id?: number;
 }
@@ -21,8 +21,8 @@ export class Album implements IAlbum {
         public name?: string,
         public year?: number,
         public genre?: Genre[] | string[],
-        public artwork?: IPicture,
+        public artwork?: string[],
         public id?: number,
         public tracks?: Track[]
-    ) {this.tracks = []}
+    ) {this.tracks = []; this.artwork = []}
 }

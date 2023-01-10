@@ -2,3 +2,4 @@
 * text=auto
 server/node_modules
 server/src/controllers/config.json
+server/src/content/artwork
