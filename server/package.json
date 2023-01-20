@@ -4,6 +4,7 @@
     "music-metadata": "^8.1.0",
     "node-fetch": "^3.3.0",
     "pg": "^8.8.0",
+    "prompt-sync": "^4.2.0",
     "typescript": "^4.9.4"
   },
   "devDependencies": {
