@@ -15,7 +15,6 @@ const TEMP_MUSIC_FOLDER = 'd:\\testmusik';
 let category: Category;
 let artist: Artist;
 let album: Album;
-let albumUpdated = false;
 let duplicateAlbum = false;
 
 const scanLocalMachine = async function (dirPath: string) {
@@ -24,14 +23,13 @@ const scanLocalMachine = async function (dirPath: string) {
   for (var i = 0; i < files.length; i++) {
     const file = files[i];
     const fullPath = path.join(dirPath, file);
+    const pathArray = (dirPath + '\\' + file).replace(BASE_MUSIC_FOLDER, '').split('\\').filter(p => p);
 
     if (fs.statSync(dirPath + "\\" + file).isDirectory()) {
-      const pathArray = (dirPath + '\\' + file).replace(BASE_MUSIC_FOLDER, '').split('\\').filter(p => p);
       if (pathArray.length === 1) {
         if (skipFolders.includes(pathArray[0])) continue;
         category = new Category(pathArray[0]);
         artist = undefined;
-        albumUpdated = false;
       }
       if (pathArray.length === 2) {
         artist = new Artist(pathArray[1], category);
@@ -39,18 +37,10 @@ const scanLocalMachine = async function (dirPath: string) {
         if (createArtistResponse) {
           artist.id = createArtistResponse.id;
         }
-        albumUpdated = false;
         album = undefined;
       }
       if (pathArray.length === 3) {
-        album = new Album(artist, artist.id, filterAlbumName(pathArray[2]))
-        const createAlbumResponse = await createAlbum(album);
-        if (createAlbumResponse) {
-          duplicateAlbum = false;
-          album.id = createAlbumResponse.id;
-        } else {
-          duplicateAlbum = true;
-        }
+        album = undefined;
       }
       await scanLocalMachine(dirPath + "\\" + file)
     } else {
@@ -58,21 +48,23 @@ const scanLocalMachine = async function (dirPath: string) {
       if (audioExtensions.includes(fullPath.split(/\.(?=[^\.]+$)/)[1])) {
         const metadata = await parseFile(fullPath); 
         //if (!artist) artist = new Artist()
-        if (!albumUpdated && !duplicateAlbum) {
-          if (!album) album = new Album(artist, artist?.id || null);
-          if (!album?.genre) album.genre = metadata.common.genre;
-          if (!album?.year) album.year = metadata.common.year;
-          if (album && metadata.common.album) album.name = filterAlbumName(metadata.common.album);
 
-          const updateAlbumResponse = await updateAlbum(album);
-          if (updateAlbumResponse) {
-            album.id = updateAlbumResponse.id;
-            albumUpdated = true;
+        // create album using track metadata
+        if (!album) {
+          album = new Album(artist, artist?.id || null, filterAlbumName(metadata.common.album) || filterAlbumName(pathArray[2]))
+          album.genre = metadata.common.genre;
+          album.year = metadata.common.year;
+          
+          const createAlbumResponse = await createAlbum(album);
+          if (createAlbumResponse) {
+            duplicateAlbum = false;
+            album.id = createAlbumResponse.id;
+          } else {
+            duplicateAlbum = true;
           }
         }
 
         if (!duplicateAlbum) {
-          const pathArray = (dirPath + '\\' + file).replace(BASE_MUSIC_FOLDER, '').split('\\').filter(p => p);
           const track = new Track(
             metadata.common.title || file,
             album,
@@ -117,9 +109,13 @@ const scanLocalMachine = async function (dirPath: string) {
   }
 }
 
-const filterAlbumName = (name: string) : string => {
-  return name.replace(/\[.*?\]/g, '').replace(/\(.*?\)/g, '').replace(/\s+/g, ' ').trim();
+const filterAlbumName = (name: string) : string | null => {
+  if (name) {
+    return name.replace(/\[.*?\]/g, '').replace(/\(.*?\)/g, '').replace(/\s+/g, ' ').trim();
+  } else {
+    return null;
+  }
 }
 
-// await deleteTracksAlbumsArtists();
+await deleteTracksAlbumsArtists();
 scanLocalMachine(BASE_MUSIC_FOLDER);
