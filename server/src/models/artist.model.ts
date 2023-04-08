@@ -7,7 +7,7 @@ export interface IArtist {
     category?: Category;
     genre?: Genre[];
     id?: number;
-    other_name?: string;
+    other_names?: string[];
     discography?: Album[];
 }
 
@@ -17,7 +17,7 @@ export class Artist implements IArtist {
         public category?: Category,
         public genre?: Genre[],
         public id?: number,
-        public other_name?: string,
+        public other_names?: string[],
         public discography?: Album[]
     ) {}
 }

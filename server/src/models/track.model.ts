@@ -15,7 +15,7 @@ export interface ITrack {
     artist_id?: number;
     album_id?: number;
     id?: number;
-    other_name?: string;
+    other_names?: string[];
 }
 
 export class Track implements ITrack {
@@ -31,6 +31,6 @@ export class Track implements ITrack {
         public artist_id?: number,
         public album_id?: number,
         public id?: number,
-        public other_name?: string
+        public other_names?: string[]
         ) {}
 }

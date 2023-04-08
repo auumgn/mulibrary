@@ -17,12 +17,13 @@ let artist: Artist;
 let album: Album;
 let duplicateAlbum = false;
 
+// add a new table to store the json of the music folder structure, if change is detected = scan those folders
 const scanLocalMachine = async function (dirPath: string) {
   const files = fs.readdirSync(dirPath)
 
   for (var i = 0; i < files.length; i++) {
     const file = files[i];
-    const fullPath = path.join(dirPath, file);
+    const fullPath = path.join(dirPath, file).toLowerCase();
     const pathArray = (dirPath + '\\' + file).replace(BASE_MUSIC_FOLDER, '').split('\\').filter(p => p);
 
     if (fs.statSync(dirPath + "\\" + file).isDirectory()) {
@@ -59,11 +60,13 @@ const scanLocalMachine = async function (dirPath: string) {
           if (createAlbumResponse) {
             duplicateAlbum = false;
             album.id = createAlbumResponse.id;
+            album.artwork = createAlbumResponse.artwork;
           } else {
             duplicateAlbum = true;
           }
         }
 
+        // remove this check?
         if (!duplicateAlbum) {
           const track = new Track(
             metadata.common.title || file,
@@ -117,5 +120,5 @@ const filterAlbumName = (name: string) : string | null => {
   }
 }
 
-await deleteTracksAlbumsArtists();
+//await deleteTracksAlbumsArtists();
 scanLocalMachine(BASE_MUSIC_FOLDER);

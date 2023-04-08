@@ -19,6 +19,8 @@ export const getTracks = async () => {
   let timestamp = 0;
   let scrobbleTimestamp = 0;
   const tsRes: any = await getRecentTimestamp();
+  console.log(tsRes);
+  
   const tsScrobbleRes: any = await getLatestScrobbleTimestamp();
   if (tsRes.length > 0) {
     timestamp = tsRes[0].timestamp / 1000;
@@ -26,8 +28,10 @@ export const getTracks = async () => {
   if (tsScrobbleRes.length > 0) {
     scrobbleTimestamp = tsScrobbleRes[0].timestamp / 1000;
   }
+  console.log(timestamp, scrobbleTimestamp);
+  
   try {
-    //await insertSyncTimestamp(Date.now());
+    await insertSyncTimestamp(Date.now());
     let page = 1;
     let lastPage = 2;
     let nowPlaying = '';
@@ -43,13 +47,13 @@ export const getTracks = async () => {
         if (res['@attr'] && res['@attr'].nowplaying) {
           if (nowPlaying !== res.id) {
             const scrobble = new Scrobble(res.name, res.artist['#text'], res.album['#text'], Math.ceil(Date.now() / 1000))
-            //await insertScrobble(scrobble);
+            await insertScrobble(scrobble);
             await addPlaycount(scrobble);
           }
           nowPlaying = res.id;
         } else if (timestamp < +res.date.uts) {
           const scrobble = new Scrobble(res.name, res.artist['#text'], res.album['#text'], res.date.uts)
-          //await insertScrobble(scrobble);
+          await insertScrobble(scrobble);
           await addPlaycount(scrobble);
         } else {
           lastPage = 0;
@@ -68,5 +72,7 @@ export const getTracks = async () => {
 
 }
 
-deleteScrobblesAndTimestamp();
+// TODO: Convert "other name" to array
+
+await deleteScrobblesAndTimestamp();
 getTracks();

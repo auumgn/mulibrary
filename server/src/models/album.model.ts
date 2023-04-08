@@ -12,7 +12,7 @@ export interface IAlbum {
     artwork?: string[];
     tracks?: Track[];
     id?: number;
-    other_name?: string;
+    other_names?: string[];
 }
 
 export class Album implements IAlbum {
@@ -25,6 +25,6 @@ export class Album implements IAlbum {
         public artwork?: string[],
         public id?: number,
         public tracks?: Track[],
-        public other_name?: string
+        public other_names?: string[]
     ) {this.tracks = []; this.artwork = []}
 }

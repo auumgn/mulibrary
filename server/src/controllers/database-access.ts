@@ -20,7 +20,8 @@ export const createAlbum = async (album: Album): Promise<Album | null> => {
   const existingAlbums = await getAlbumByName(album.name, album.artist.name);
   if (existingAlbums.length !== 0) {
     console.error("Duplicate album", existingAlbums[0].name, existingAlbums[0].artist);
-    return null;
+    const album = new Album(existingAlbums[0].artist, existingAlbums[0].artist_id, existingAlbums[0].name, existingAlbums[0].year, existingAlbums[0].genre, existingAlbums[0].artwork, existingAlbums[0].id);
+      return album;
   } else {
     const query = {
       text: 'INSERT INTO album(name, artist, year, category, artwork, artist_id) VALUES($1, $2, $3, $4, $5, $6) RETURNING *',
@@ -59,7 +60,7 @@ export const updateAlbum = async (album: Album): Promise<Album | null> => {
 
 const getAlbumByName = async function (album: string, artist: string, extended?: boolean) {
   const query = {
-    text: 'SELECT * from album where (lower(name) = $1 or lower(other_name) = $1) and lower(artist) = $2',
+    text: 'SELECT * from album where (lower(name) = $1 or $1 ILIKE any(other_names)) and lower(artist) = $2',
     values: [album.toLowerCase(), artist.toLowerCase()],
   }
   if (extended) {
@@ -75,7 +76,8 @@ export const createArtist = async (artist: Artist): Promise<Artist | null> => {
   const existingArtists = await getArtistByName(artist.name);
   if (existingArtists.length !== 0) {
     console.error("Duplicate artist", existingArtists[0].name);
-    return null;
+    const artist = new Artist(existingArtists[0].name, existingArtists[0].category, existingArtists[0].genre, existingArtists[0].id, existingArtists[0].other_names);
+    return artist;
   } else {
     const query = {
       text: 'INSERT INTO artist(name, category) VALUES($1, $2) RETURNING *',
@@ -85,7 +87,7 @@ export const createArtist = async (artist: Artist): Promise<Artist | null> => {
     //console.log('Creating artist', artist.name);
     const res: Artist[] = await executeQuery(query);
     if (res && res.length > 0) {
-      const artist = new Artist(res[0].name, res[0].category, res[0].genre, res[0].id, res[0].other_name);
+      const artist = new Artist(res[0].name, res[0].category, res[0].genre, res[0].id, res[0].other_names);
       return artist;
     } else {
       return null;
@@ -96,14 +98,14 @@ export const createArtist = async (artist: Artist): Promise<Artist | null> => {
 export const updateArtist = async (artist: Artist): Promise<Artist | null> => {
 
   const query = {
-    text: 'UPDATE artist set (name, category, genre, other_name) = (COALESCE($1, name), COALESCE($2, category), ($3, genre), COALESCE($4, other_name)) where id = $5 RETURNING *',
-    values: [artist.name, artist.category?.name, artist.genre, artist.other_name, artist.id],
+    text: 'UPDATE artist set (name, category, genre, other_names) = (COALESCE($1, name), COALESCE($2, category), ($3, genre), array_append(other_names, COALESCE($4, ""))) where id = $5 RETURNING *',
+    values: [artist.name, artist.category?.name, artist.genre, artist.other_names, artist.id],
   }
   //console.log('');
   //console.log('Updating artist', artist.name);
   const res: Artist[] = await executeQuery(query);
   if (res && res.length > 0) {
-    const artist = new Artist(res[0].name, res[0].category, res[0].genre, res[0].id, res[0].other_name);
+    const artist = new Artist(res[0].name, res[0].category, res[0].genre, res[0].id, res[0].other_names);
     return artist;
   } else {
     return null;
@@ -113,7 +115,7 @@ export const updateArtist = async (artist: Artist): Promise<Artist | null> => {
 
 const getArtistByName = async function (name: string, extended?: boolean): Promise<Artist[]> {
   const query = {
-    text: 'SELECT * from artist where lower(name) = $1 or lower(other_name) = $1',
+    text: 'SELECT * from artist where lower(name) = $1 or $1 ILIKE any(other_names)',
     values: [name.toLowerCase()],
   }
   if (extended) {
@@ -148,14 +150,14 @@ export const createTrack = async (track: ITrack): Promise<Track | null> => {
 export const updateTrack = async (track: Track): Promise<Track | null> => {
   
   const query = {
-    text: 'UPDATE track set (pla, category, genre, other_name) = (COALESCE($1, name), COALESCE($2, category), ($3, genre), COALESCE($4, other_name)) where id = $5 RETURNING *',
-    values: [artist.name, artist.category?.name, artist.genre, artist.other_name, artist.id],
+    text: 'UPDATE track set (pla, category, genre, other_names) = (COALESCE($1, name), COALESCE($2, category), ($3, genre), array_append(COALESCE($4, ''))) where id = $5 RETURNING *',
+    values: [artist.name, artist.category?.name, artist.genre, artist.other_names, artist.id],
   }
   //console.log('');
   //console.log('Updating artist', artist.name);
   const res: Track[] = await executeQuery(query);
   if (res && res.length > 0) {
-    const track = new Artist(res[0].name, res[0].category, res[0].genre, res[0].id, res[0].other_name);
+    const track = new Artist(res[0].name, res[0].category, res[0].genre, res[0].id, res[0].other_names);
     return track;
   } else {
     return null;
@@ -166,7 +168,7 @@ export const updateTrack = async (track: Track): Promise<Track | null> => {
 
 const getTrackByName = async function (name: string, artist: string, album: string, track_no?: number, extended?: boolean) {
   const query = {
-    text: 'SELECT * from track where (lower(name) = $1 and lower(artist) = $2 and lower(album) = $3) or (lower(name) = $1 and lower(artist) = $2 and lower(album) = $3 and track_no = $4)',
+    text: 'SELECT * from track where ((lower(name) = $1 or $1 ILIKE any(other_names)) and lower(artist) = $2 and lower(album) = $3) or ((lower(name) = $1 or $1 ILIKE any(other_names)) and lower(artist) = $2 and lower(album) = $3 and track_no = $4)',
     values: [name.toLowerCase(), artist.toLowerCase(), album.toLowerCase(), track_no],
   }
   if (extended) {
@@ -189,6 +191,9 @@ export const addPlaycount = async function (scrobble: Scrobble) {
   // if there's 0 results or more than 1, get closest match (no more than 3 char difference)
   if (matchingArtist.length !== 1) {
     artistName = await findClosestMatch(scrobble, "artist");
+    if (artistName === undefined) {
+      return null;
+    }
     if (!artistName) {
       // if there's still nothing, then perform a 'LIKE' query
       artistName = await extendedSearch(scrobble, "artist")
@@ -217,7 +222,7 @@ export const addPlaycount = async function (scrobble: Scrobble) {
     trackName = matchingTrack[0].name;
   }
   const query = {
-    text: 'UPDATE track set (plays) = (plays + 1) where (name = $1 or name = $2) and (artist = $3 or artist = $4) and (album = $5 or album = $6)',
+    text: 'UPDATE track set plays = plays + 1 where (name = $1 or name = $2) and (artist = $3 or artist = $4) and (album = $5 or album = $6)',
     values: [scrobble.name, trackName, scrobble.artist, artistName, scrobble.album, albumName],
   }
   let formattedQuery = `${query.text}`;
@@ -226,8 +231,8 @@ export const addPlaycount = async function (scrobble: Scrobble) {
   }
   console.log(formattedQuery);
 
-  //const res = await executeQuery(query);
-  //return res;
+  const res = await executeQuery(query);
+  return res;
 }
 
 const extendedSearch = async (scrobble: Scrobble, type: string, artist?: string, album?: string): Promise<string> => {
@@ -258,7 +263,7 @@ const extendedSearch = async (scrobble: Scrobble, type: string, artist?: string,
       if (matchingName) {
         validId = true;
         const query = {
-          text: `UPDATE ${type} set other_name = $1 where id = $2`,
+          text: `UPDATE ${type} set other_names = array_append(other_names, $1) where id = $2`,
           values: [name, matchingName.id],
         }
         const res = await executeQuery(query);
@@ -296,7 +301,6 @@ const findClosestMatch = async (scrobble: Scrobble, type: string, artist?: strin
     }
     similarlyNamedEntries[distance].push({ name: localResults[i].name, id: localResults[i].id })
   }
-  // TODO: If the input word is skip then move onto the next scrobble
 
   const sortedEntries = Object.keys(similarlyNamedEntries).map(Number).sort((a, b) => (a - b));
   console.log(`Missing ${type}, scrobble info: `, scrobble.artist, ",", scrobble.album, ",", scrobble.name);
@@ -314,17 +318,31 @@ const findClosestMatch = async (scrobble: Scrobble, type: string, artist?: strin
     let artistIndex = prompt(`Please choose ${type} id from the array above: `);
     // if value is a number then proceed
     if (!isNaN(artistIndex)) {
-      // TODO needs to go through a whole obj and not just one entry
-      const match = similarlyNamedEntries[sortedEntries[0]].find(entry => entry.id === +artistIndex);
-      if (match) {
+      
+      const match: { name?: string, id?: number } = Object.values(similarlyNamedEntries).flat().find((entry: { name?: string, id?: number }) => entry.id === +artistIndex);
+      if (match && match.id) {
         validId = true;
         const query = {
-          text: `UPDATE ${type} set other_name = $1 where id = $2`,
+          text: `UPDATE ${type} set other_names = array_append(other_names, $1) where id = $2`,
           values: [name, match.id],
         }
         const res = await executeQuery(query);
         return match.name;
       }
+    } else if (artistIndex.startsWith("id")) {
+      validId = true;
+        const query = {
+          text: `UPDATE ${type} set other_names = array_append(other_names, $1) where id = $2`,
+          values: [name, artistIndex.slice(2)],
+        }
+        const res = await executeQuery(query);
+        if (res && res.length > 0) {
+          return res[0].name;
+        }
+    } else if (artistIndex === "skip") {
+      return undefined;
+    } else if (artistIndex === "quit") {
+      process.exit();
     } else {
       break;
     }
