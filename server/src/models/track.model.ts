@@ -7,9 +7,9 @@ export interface ITrack {
     name: string;
     album: Album;
     artist: Artist;
-    duration: number;
-    track_no: number;
-    category: Category;
+    duration?: number;
+    track_no?: number;
+    category?: Category;
     year?: number;
     genre?: Genre[] | string[];
     artist_id?: number;
@@ -23,9 +23,9 @@ export class Track implements ITrack {
         public name: string,
         public album: Album,
         public artist: Artist,
-        public duration: number,
-        public track_no: number,
-        public category: Category,
+        public duration?: number,
+        public track_no?: number,
+        public category?: Category,
         public year?: number,
         public genre?: Genre[] | string[],
         public artist_id?: number,
