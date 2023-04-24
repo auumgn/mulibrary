@@ -180,50 +180,65 @@ const getTrackByName = async function (name: string, artist: string, album: stri
   return res;
 }
 
+const getEntryById = async function (type: string, id: number) {
+  const res = await executeQuery(`SELECT * from ${type} where id = ${id.toString()})`);
+  return res;
+}
+
+const updateOtherNames = async (type: string, newOtherName: string, id: number) => {
+  const query = {
+    text: `UPDATE ${type} set other_names = array_append(other_names, $1) where id = $2 RETURNING *`,
+    values: [newOtherName, id],
+  }
+  const res = await executeQuery(query);
+  return res;
+}
+
 export const addPlaycount = async function (scrobble: Scrobble) {
   // names found in the database
-  let artistName: string;
-  let albumName: string;
-  let trackName: string;
+  let artist: Artist;
+  let album: Album;
+  let track: Track;
 
   // find exact name
   const matchingArtist = await getArtistByName(scrobble.artist);
   // if there's 0 results or more than 1, get closest match (no more than 3 char difference)
-  if (matchingArtist.length !== 1) {
-    artistName = await findClosestMatch(scrobble, "artist");
-    if (artistName === undefined) {
-      return null;
-    }
-    if (!artistName) {
-      // if there's still nothing, then perform a 'LIKE' query
-      artistName = await extendedSearch(scrobble, "artist")
-    }
+  if (matchingArtist.length === 1) {
+    artist = matchingArtist[0];
   } else {
-    artistName = matchingArtist[0].name;
+    artist = await findOrCreateArtist(scrobble);
+    if (!artist) throw new Error('Artist not found in database or unable to create one:\n' + scrobble.artist + ' - ' + scrobble.album + ' - ' + scrobble.name);
+    // add alternative look up name from the scrobble to avoid future queries
+    await updateOtherNames("artist", scrobble.artist, artist.id);
   }
 
-  const matchingAlbum = await getAlbumByName(scrobble.album, artistName || scrobble.artist);
-  if (matchingAlbum.length !== 1) {
-    albumName = await findClosestMatch(scrobble, "album", artistName || scrobble.artist);
-    if (!albumName) {
-      albumName = await extendedSearch(scrobble, "album", artistName || scrobble.artist);
-    }
+  // repeat for album and track
+  const matchingAlbum = await getAlbumByName(scrobble.album, artist.name);
+  if (matchingAlbum.length === 1) {
+    album = matchingAlbum[0];
   } else {
-    albumName = matchingAlbum[0].name;
+    album = await findOrCreateAlbum(scrobble, artist);
+    if (!album) throw new Error('Album not found in database or unable to create one:\n' + scrobble.artist + ' - ' + scrobble.album + ' - ' + scrobble.name);
+    await updateOtherNames("album", scrobble.album, album.id);
   }
 
-  const matchingTrack = await getTrackByName(scrobble.name, artistName || scrobble.artist, albumName || scrobble.album);
-  if (matchingTrack.length !== 1) {
-    trackName = await findClosestMatch(scrobble, "track", artistName || scrobble.artist, albumName || scrobble.album);
-    if (!trackName) {
-      trackName = await extendedSearch(scrobble, "track", artistName || scrobble.artist, albumName || scrobble.album);
-    }
+  const matchingTrack = await getTrackByName(scrobble.name, artist.name, album.name);
+  if (matchingTrack.length === 1) {
+    track = matchingTrack[0];
   } else {
-    trackName = matchingTrack[0].name;
+    track = await findOrCreateTrack(scrobble, artist, album);
+    if (!track) throw new Error('Track not found in database or unable to create one:\n' + scrobble.artist + ' - ' + scrobble.album + ' - ' + scrobble.name);
+    await updateOtherNames("track", scrobble.name, track.id);
+
   }
+
+  if (!artist || !album || !track) {
+    console.log("Error")
+  }
+
   const query = {
     text: 'UPDATE track set plays = plays + 1 where (name = $1 or name = $2) and (artist = $3 or artist = $4) and (album = $5 or album = $6)',
-    values: [scrobble.name, trackName, scrobble.artist, artistName, scrobble.album, albumName],
+    values: [scrobble.name, track.name, scrobble.artist, artist.name, scrobble.album, album.name],
   }
   let formattedQuery = `${query.text}`;
   for (let i = 1; i < query.values.length; i++) {
@@ -235,120 +250,124 @@ export const addPlaycount = async function (scrobble: Scrobble) {
   return res;
 }
 
-const extendedSearch = async (scrobble: Scrobble, type: string, artist?: string, album?: string): Promise<string> => {
-  let localResults = [];
-  let name: string;
-  if (type === "artist") {
-    name = scrobble.artist;
-    localResults = await getArtistByName(artist || scrobble.artist, true);
-  } else if (type === "album") {
-    name = scrobble.album;
-    localResults = await getAlbumByName(album || scrobble.album, artist || scrobble.artist, true);
-  } else if (type === "track") {
-    name = scrobble.name;
-    localResults = await getTrackByName(scrobble.name, artist || scrobble.artist, album || scrobble.album, undefined, true);
-  }
-  if (!localResults) {
+const findOrCreateArtist = async (scrobble: Scrobble): Promise<Artist> => {
+  const artistsInDatabase = await executeQuery({ text: 'SELECT name, id from artist' });
+  if (!artistsInDatabase) {
     return null
   }
-  console.log(`Missing ${type}, scrobble info: `, scrobble.artist, ",", scrobble.album, ",", scrobble.name);
-  localResults = localResults.map(entry => { return { name: entry.name, id: entry.id, artist: entry.artist || null, album: entry.album || null } })
-  console.log("Available db names: ", localResults);
-  let validId = false;
-  while (!validId) {
-    let artistIndex = prompt(`Please choose ${type} id from the array above: `);
-    // if value is a number then proceed
-    if (!isNaN(artistIndex)) {
-      const matchingName = localResults.find((entry: Artist | Album | Track) => entry.id = +artistIndex);
-      if (matchingName) {
-        validId = true;
-        const query = {
-          text: `UPDATE ${type} set other_names = array_append(other_names, $1) where id = $2`,
-          values: [name, matchingName.id],
-        }
-        const res = await executeQuery(query);
-        return matchingName.name;
-      }
-    } else {
-      break;
-    }
+  console.log(`Missing artist, scrobble info: `, scrobble.artist, ",", scrobble.album, ",", scrobble.name);
+  console.log("Closest db names: ");
+  const closestEntries: ClosestEntries = findClosestEntries(artistsInDatabase, scrobble.artist);
+  const artist: UserRequest = await promptUserAndProcess("artist", closestEntries, scrobble.artist);
+  if (artist.newEntryName !== undefined) {
+    const newArtist = new Artist(artist.newEntryName);
+    artist.data = await createArtist(newArtist);
   }
-  return null;
+  return artist.data as Artist;
 }
 
-const findClosestMatch = async (scrobble: Scrobble, type: string, artist?: string, album?: string): Promise<string> => {
-  let localResults: Artist[] | Album[] | Track[];
-  let name: string;
-  if (type === "artist") {
-    localResults = await executeQuery({ text: 'SELECT name, id from artist' });
-    name = scrobble.artist;
-  } else if (type === "album") {
-    localResults = await executeQuery({ text: "SELECT name, id from album where artist = $1 or artist = $2", values: [scrobble.artist, artist] })
-    name = scrobble.album;
-  } else if (type === "track") {
-    localResults = await executeQuery({ text: "SELECT name, id from track where artist = $1 or artist = $2 and album = $3 or album = $4", values: [scrobble.artist, artist, scrobble.album, album] })
-    name = scrobble.name;
-  }
-  if (!localResults) {
+const findOrCreateAlbum = async (scrobble: Scrobble, artist: Artist): Promise<Album> => {
+  const albumsInDatabase = await executeQuery({ text: "SELECT name, id from album where artist = $1 or artist = $2", values: [scrobble.artist, artist] });
+  if (!albumsInDatabase) {
+    // TODO: BAD? even if there's nothing, create something? or we can't have nothing? think how returning null can be positive for catching weird shit
     return null
   }
-  let distance: number;
-  let similarlyNamedEntries = {};
-  for (let i = 0; i < localResults.length; i++) {
-    distance = stringDistance(localResults[i].name.toLowerCase(), name.toLowerCase());
-    if (!similarlyNamedEntries[distance]) {
-      similarlyNamedEntries[distance] = [];
-    }
-    similarlyNamedEntries[distance].push({ name: localResults[i].name, id: localResults[i].id })
-  }
-
-  const sortedEntries = Object.keys(similarlyNamedEntries).map(Number).sort((a, b) => (a - b));
-  console.log(`Missing ${type}, scrobble info: `, scrobble.artist, ",", scrobble.album, ",", scrobble.name);
+  
+  console.log(`Missing album, scrobble info: `, scrobble.artist, ",", scrobble.album, ",", scrobble.name);
   console.log("Closest db names: ");
-  let cnt = 0;
-  for (let i = 0; i < sortedEntries.length; i++) {
-    if (cnt === 3) break;
-    console.log(sortedEntries[i], similarlyNamedEntries[sortedEntries[i]]);
-    cnt++;
+  const closestEntries: ClosestEntries = findClosestEntries(albumsInDatabase, scrobble.album);
+  const album: UserRequest = await promptUserAndProcess("album", closestEntries, scrobble.album);
+  if (album.newEntryName !== undefined) {
+    const newAlbum = new Album(Artist, artist.id, album.newEntryName);
+    album.data = await createAlbum(newAlbum);
   }
+  return album.data as Album;
+}
 
+const findOrCreateTrack = async (scrobble: Scrobble, artist: Artist, album: Album): Promise<Track> => {
+  const tracksInDatabase = await executeQuery({ text: "SELECT name, id from track where artist = $1 or artist = $2 and album = $3 or album = $4",
+                                                values: [scrobble.artist, artist, scrobble.album, album] });
+  if (!tracksInDatabase) {
+    // TODO: BAD? even if there's nothing, create something? or we can't have nothing? think how returning null can be positive for catching weird shit
+    return null
+  }
+  
+  console.log(`Missing album, scrobble info: `, scrobble.artist, ",", scrobble.album, ",", scrobble.name);
+  console.log("Closest db names: ");
+  const closestEntries: ClosestEntries = findClosestEntries(tracksInDatabase, scrobble.name);
+  const track: UserRequest = await promptUserAndProcess("track", closestEntries, scrobble.name);
+  if (track.newEntryName !== undefined) {
+    const newTrack = new Track(track.newEntryName, album, artist);
+    track.data = await createTrack(newTrack);
+  }
+  return track.data as Track;
+}
+
+type UserRequest = {
+  data?: Artist | Album | Track,
+  newEntryName?: string
+}
+
+const promptUserAndProcess = async (type: string, closestEntries: ClosestEntries, scrobbleName: string): Promise<UserRequest> => {
   let validId = false;
-
+  const userPrompt: UserRequest = {};
   while (!validId) {
-    let artistIndex = prompt(`Please choose ${type} id from the array above: `);
-    // if value is a number then proceed
-    if (!isNaN(artistIndex)) {
-      
-      const match: { name?: string, id?: number } = Object.values(similarlyNamedEntries).flat().find((entry: { name?: string, id?: number }) => entry.id === +artistIndex);
+    let existingEntryIndex = prompt(`Please choose ${type} id from the array above: `);
+    // artist/album/track chosen from the provided options
+    // is it a number?
+    if (!isNaN(existingEntryIndex)) {
+      const match: Artist | Album | Track = Object.values(closestEntries).flat().find((entry: Artist) => entry.id === +existingEntryIndex);
       if (match && match.id) {
         validId = true;
-        const query = {
-          text: `UPDATE ${type} set other_names = array_append(other_names, $1) where id = $2`,
-          values: [name, match.id],
-        }
-        const res = await executeQuery(query);
-        return match.name;
+        userPrompt.data = match;
+        return userPrompt;
       }
-    } else if (artistIndex.startsWith("id")) {
-      validId = true;
-        const query = {
-          text: `UPDATE ${type} set other_names = array_append(other_names, $1) where id = $2`,
-          values: [name, artistIndex.slice(2)],
+      // provide your own id for existing artist/album/track
+    } else if (existingEntryIndex.startsWith("id")) {
+      const res: Artist[] | Album[] | Track[] = await getEntryById(type, existingEntryIndex.slice(2));
+      if (res && res.length > 0) {
+          validId = true;
+          userPrompt.data = res[0];
+          return userPrompt;
         }
-        const res = await executeQuery(query);
-        if (res && res.length > 0) {
-          return res[0].name;
-        }
-    } else if (artistIndex === "skip") {
+      else {
+        console.log("Invalid id provided");
+      }
+      // create new artist/album/track
+    } else if (existingEntryIndex.startsWith("create ")) {
+      userPrompt.newEntryName = existingEntryIndex.slice(7);
+      return userPrompt;
+    } else if (existingEntryIndex === "skip") {
       return undefined;
-    } else if (artistIndex === "quit") {
+    } else if (existingEntryIndex === "quit") {
       process.exit();
-    } else {
-      break;
     }
   }
-  return null;
 }
+
+interface ClosestEntries {
+  [key: number]: (Artist[] | Album[] | Track[]);
+}
+
+const findClosestEntries = (databaseEntries: any, entryName: string): ClosestEntries => {
+  let distance: number;
+  const closestEntries: ClosestEntries = {};
+  for (let i = 0; i < databaseEntries.length; i++) {
+    distance = stringDistance(databaseEntries[i].name.toLowerCase(), entryName.toLowerCase());
+    if (!closestEntries[distance]) {
+      closestEntries[distance] = [];
+    }
+    closestEntries[distance].push(databaseEntries[i])
+  }
+  const sortedEntries = Object.keys(closestEntries).map(Number).sort((a, b) => (a - b));
+  let sortedEntriesLimit = 0;
+  for (let i = 0; i < sortedEntries.length; i++) {
+    if (sortedEntriesLimit === 3) break;
+    console.log(sortedEntries[i], closestEntries[sortedEntries[i]]);
+    sortedEntriesLimit++;
+  }
+  return closestEntries;
+} 
 
 /****************************************************************************************************************************************** */
 
@@ -418,7 +437,7 @@ export const deleteScrobblesAndTimestamp = async function () {
 
 /*********************************************************************************************************************** */
 
-const executeQuery = async (query: { text: string, values?: any[] }): Promise<any[] | null> => {
+const executeQuery = async (query: { text: string, values?: any[] } | string): Promise<any[] | null> => {
   const client = await pool.connect()
   try {
     const res = await client.query(query);
