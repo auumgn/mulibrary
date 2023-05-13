@@ -1,30 +1,30 @@
-import { IPicture } from "music-metadata";
-import { Artist } from "./artist.model";
 import { Genre } from "./genre.model";
 import { Track } from "./track.model";
 
 export interface IAlbum {
-    artist: Artist;
-    artist_id?: number;
-    name?: string;
+    name: string;
+    artist?: string[];
+    artist_id?: number[];
     year?: number;
     genre?: Genre[] | string[];
     artwork?: string[];
-    tracks?: Track[];
+    tracks?: number[];
     id?: number;
     other_names?: string[];
+    category?: string;
 }
 
 export class Album implements IAlbum {
     constructor(
-        public artist: Artist,
-        public artist_id?: number,
-        public name?: string,
+        public name: string,
+        public artist?: string[],
+        public artist_id?: number[],
         public year?: number,
         public genre?: Genre[] | string[],
         public artwork?: string[],
         public id?: number,
-        public tracks?: Track[],
-        public other_names?: string[]
+        public tracks?: number[],
+        public other_names?: string[],
+        public category?: string
     ) {this.tracks = []; this.artwork = []}
 }

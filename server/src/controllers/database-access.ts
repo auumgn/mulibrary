@@ -17,21 +17,26 @@ const pool = new Pool({
 })
 
 export const createAlbum = async (album: Album): Promise<Album | null> => {
-  const existingAlbums = await getAlbumByName(album.name, album.artist.name);
-  if (existingAlbums.length !== 0) {
+  const existingAlbums = await getAlbumByName(album.name, album.artist);
+  if (existingAlbums && existingAlbums.length !== 0) {
     console.error("Duplicate album", existingAlbums[0].name, existingAlbums[0].artist);
     const album = new Album(existingAlbums[0].artist, existingAlbums[0].artist_id, existingAlbums[0].name, existingAlbums[0].year, existingAlbums[0].genre, existingAlbums[0].artwork, existingAlbums[0].id);
       return album;
   } else {
     const query = {
       text: 'INSERT INTO album(name, artist, year, category, artwork, artist_id) VALUES($1, $2, $3, $4, $5, $6) RETURNING *',
-      values: [album.name, album.artist?.name, album.year, album.artist?.category?.name, album.artwork, album.artist_id],
+      values: [album.name, album.artist, album.year, album.category, album.artwork, album.artist_id],
     }
     //console.log('');
-    console.log('Creating album', album.name, album.artist?.name);
-    const res: Album[] = await executeQuery(query);
+    console.log('Creating album', album.name, album.artist);
+    let res: Album[] = await executeQuery(query);
     if (res && res.length > 0) {
-      const album = new Album(res[0].artist, res[0].artist_id, res[0].name, res[0].year, res[0].genre, res[0].artwork, res[0].id);
+      album.id = res[0].id;
+      const newQuery = {
+        text: 'INSERT INTO "albumArtist"(artist, artist_id, album, album_id) VALUES($1, $2, $3, $4) RETURNING *',
+        values: [album.artist[0], album.artist_id[0], album.name, album.id]
+      }
+      await executeQuery(newQuery);
       return album;
     } else {
       return null;
@@ -39,33 +44,31 @@ export const createAlbum = async (album: Album): Promise<Album | null> => {
   }
 }
 
-export const updateAlbum = async (album: Album): Promise<Album | null> => {
+export const updateArtwork = async (album: Album): Promise<Album | null> => {
 
   const query = {
-    text: 'UPDATE album set (name, artist, year, category, artwork, artist_id) = (COALESCE($1, name), COALESCE($2, artist), COALESCE($3, year), COALESCE($4, category), COALESCE($5, artwork), COALESCE($6, artist_id)) where id = $7 RETURNING *',
-    values: [album.name, album.artist?.name, album.year, album.artist?.category?.name, album.artwork, album.artist_id, album.id],
+    text: `UPDATE album set artwork = array_append(artwork, $1) where ID = $2 RETURNING *`,
+    values: [album.artwork, album.id],
   }
   console.log('');
-  console.log('Updating album', album.name);
+  console.log('Updating artwork', album.name, album.artist);
   const res: Album[] = await executeQuery(query);
 
   if (res && res.length > 0) {
-    const album = new Album(res[0].artist, res[0].artist_id, res[0].name, res[0].year, res[0].genre, res[0].artwork, res[0].id);
+    const album = new Album(res[0].name, res[0].artist, res[0].artist_id, res[0].year, res[0].genre, res[0].artwork, res[0].id, res[0].tracks, res[0].other_names, res[0].category);
     return album;
   } else {
     return null;
   }
-
 }
 
-const getAlbumByName = async function (album: string, artist: string, extended?: boolean) {
-  const query = {
-    text: 'SELECT * from album where (lower(name) = $1 or $1 ILIKE any(other_names)) and lower(artist) = $2',
-    values: [album.toLowerCase(), artist.toLowerCase()],
-  }
-  if (extended) {
-    query.text = query.text.replace(/=/g, "LIKE");
-    query.values = query.values.map(value => '%' + value + '%');
+const getAlbumByName = async function (album: string, artist: string[]) {
+  let query = {
+    text: `SELECT al.* from album al inner join "albumArtist" aa on al.id = aa.album_id
+    INNER JOIN artist ar on ar.id = aa.artist_id 
+    WHERE (lower(al.name) = $1 or $1 ILIKE any(al.other_names)) 
+    AND ($2 && ar.other_names OR lower(ar.name) = any($2))`,
+    values: [album.toLowerCase(), artist.map(a => a.toLowerCase())],
   }
 
   const res = await executeQuery(query);
@@ -74,17 +77,17 @@ const getAlbumByName = async function (album: string, artist: string, extended?:
 
 export const createArtist = async (artist: Artist): Promise<Artist | null> => {
   const existingArtists = await getArtistByName(artist.name);
-  if (existingArtists.length !== 0) {
+  if (existingArtists && existingArtists.length !== 0) {
     console.error("Duplicate artist", existingArtists[0].name);
     const artist = new Artist(existingArtists[0].name, existingArtists[0].category, existingArtists[0].genre, existingArtists[0].id, existingArtists[0].other_names);
     return artist;
   } else {
     const query = {
       text: 'INSERT INTO artist(name, category) VALUES($1, $2) RETURNING *',
-      values: [artist.name, artist.category.name],
+      values: [artist.name, artist.category],
     }
-    //console.log('');
-    //console.log('Creating artist', artist.name);
+    console.log('');
+    console.log('Creating artist', artist.name);
     const res: Artist[] = await executeQuery(query);
     if (res && res.length > 0) {
       const artist = new Artist(res[0].name, res[0].category, res[0].genre, res[0].id, res[0].other_names);
@@ -98,8 +101,8 @@ export const createArtist = async (artist: Artist): Promise<Artist | null> => {
 export const updateArtist = async (artist: Artist): Promise<Artist | null> => {
 
   const query = {
-    text: 'UPDATE artist set (name, category, genre, other_names) = (COALESCE($1, name), COALESCE($2, category), ($3, genre), array_append(other_names, COALESCE($4, ""))) where id = $5 RETURNING *',
-    values: [artist.name, artist.category?.name, artist.genre, artist.other_names, artist.id],
+    text: 'UPDATE artist set (name, category, genre, other_names) = (COALESCE($1, name), COALESCE($2, category), ($3, genre), array_append(other_names, $4)) where id = $5 RETURNING *',
+    values: [artist.name, artist.category, artist.genre, artist.other_names, artist.id],
   }
   //console.log('');
   //console.log('Updating artist', artist.name);
@@ -127,19 +130,27 @@ const getArtistByName = async function (name: string, extended?: boolean): Promi
 }
 
 export const createTrack = async (track: ITrack): Promise<Track | null> => {
-  const existingTracks = await getTrackByName(track.name, track.artist?.name, track.album?.name, track.track_no);
-  if (existingTracks.length !== 0) {
+  const existingTracks = await getTrackByName(track.name, track.artist, track.album_id, track.track_no);
+  if (existingTracks && existingTracks.length !== 0) {
     //console.error("Duplicate track", existingTracks);
     return null;
   } else {
     const query = {
       text: 'INSERT INTO track(name, artist, album, track_no, category, duration, year, genre, album_id, artist_id) VALUES($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING *',
-      values: [track.name, track.artist?.name, track.album?.name, track.track_no, track.category?.name, track.duration, track.year, track.genre, track.album_id, track.artist_id],
+      values: [track.name, track.artist, track.album, track.track_no, track.category, track.duration, track.year, track.genre, track.album_id, track.artist_id],
     }
     //console.log('Creating track', track.name);
     const res: Track[] = await executeQuery(query);
+    // add id and other names from DB as local file will not provide this 
     if (res && res.length > 0) {
-      const track = new Track(res[0].name, res[0].album, res[0].artist, res[0].duration, res[0].track_no, res[0].category, res[0].year, res[0].genre, res[0].artist_id, res[0].album_id, res[0].id);
+      track.id = res[0].id;
+      track.other_names = res[0].other_names;
+      //const track = new Track(res[0].name, res[0].artist, res[0].artist_id, res[0].album, res[0].album_id, res[0].duration, res[0].track_no, res[0].category, res[0].year, res[0].genre, res[0].id, res[0].other_names);
+      const newQuery = {
+        text: 'INSERT INTO "trackArtist"(artist, artist_id, track, track_id) VALUES($1, $2, $3, $4) RETURNING *',
+        values: [track.artist[0], track.artist_id[0], track.name, track.id]
+      }
+      await executeQuery(newQuery);
       return track;
     } else {
       return null;
@@ -165,17 +176,17 @@ export const updateTrack = async (track: Track): Promise<Track | null> => {
   
 }
 */
-
-const getTrackByName = async function (name: string, artist: string, album: string, track_no?: number, extended?: boolean) {
-  const query = {
-    text: 'SELECT * from track where ((lower(name) = $1 or $1 ILIKE any(other_names)) and lower(artist) = $2 and lower(album) = $3) or ((lower(name) = $1 or $1 ILIKE any(other_names)) and lower(artist) = $2 and lower(album) = $3 and track_no = $4)',
-    values: [name.toLowerCase(), artist.toLowerCase(), album.toLowerCase(), track_no],
+// TODO readjust for the trackArtist table
+const getTrackByName = async function (name: string, artist: string[], album_id?: number, track_no?: number) {
+  let query = {
+    text: `SELECT t.* from track t INNER JOIN "trackArtist" ta ON t.id = ta.track_id
+    INNER JOIN artist a ON ta.artist_id = a.id
+    WHERE (lower(t.name) = $1 or $1 ILIKE any(t.other_names))
+    AND (($2 && a.other_names OR lower(a.name) = any($2)) or t.album_id = $3)
+    AND (t.track_no = $4 OR $4 IS NULL)`,
+    values: [name.toLowerCase(), artist.map(a => a.toLowerCase()), album_id, track_no],
   }
-  if (extended) {
-    query.text = query.text.replace(/=/g, "LIKE");
-    query.values = query.values.map(value => '%' + value + '%');
-  }
-
+  // execute query and return result
   const res = await executeQuery(query);
   return res;
 }
@@ -213,7 +224,7 @@ export const addPlaycount = async function (scrobble: Scrobble) {
   }
 
   // repeat for album and track
-  const matchingAlbum = await getAlbumByName(scrobble.album, artist.name);
+  const matchingAlbum = await getAlbumByName(scrobble.album, [artist.name]);
   if (matchingAlbum.length === 1) {
     album = matchingAlbum[0];
   } else {
@@ -222,7 +233,7 @@ export const addPlaycount = async function (scrobble: Scrobble) {
     await updateOtherNames("album", scrobble.album, album.id);
   }
 
-  const matchingTrack = await getTrackByName(scrobble.name, artist.name, album.name);
+  const matchingTrack = await getTrackByName(scrobble.name, [artist.name], album.id || null);
   if (matchingTrack.length === 1) {
     track = matchingTrack[0];
   } else {
@@ -230,10 +241,6 @@ export const addPlaycount = async function (scrobble: Scrobble) {
     if (!track) throw new Error('Track not found in database or unable to create one:\n' + scrobble.artist + ' - ' + scrobble.album + ' - ' + scrobble.name);
     await updateOtherNames("track", scrobble.name, track.id);
 
-  }
-
-  if (!artist || !album || !track) {
-    console.log("Error")
   }
 
   const query = {
@@ -269,7 +276,6 @@ const findOrCreateArtist = async (scrobble: Scrobble): Promise<Artist> => {
 const findOrCreateAlbum = async (scrobble: Scrobble, artist: Artist): Promise<Album> => {
   const albumsInDatabase = await executeQuery({ text: "SELECT name, id from album where artist = $1 or artist = $2", values: [scrobble.artist, artist] });
   if (!albumsInDatabase) {
-    // TODO: BAD? even if there's nothing, create something? or we can't have nothing? think how returning null can be positive for catching weird shit
     return null
   }
   
@@ -278,7 +284,7 @@ const findOrCreateAlbum = async (scrobble: Scrobble, artist: Artist): Promise<Al
   const closestEntries: ClosestEntries = findClosestEntries(albumsInDatabase, scrobble.album);
   const album: UserRequest = await promptUserAndProcess("album", closestEntries, scrobble.album);
   if (album.newEntryName !== undefined) {
-    const newAlbum = new Album(Artist, artist.id, album.newEntryName);
+    const newAlbum = new Album(album.newEntryName, [artist.name], [artist.id], null, artist.genre, null, null, null, null, artist.category);
     album.data = await createAlbum(newAlbum);
   }
   return album.data as Album;
@@ -288,7 +294,6 @@ const findOrCreateTrack = async (scrobble: Scrobble, artist: Artist, album: Albu
   const tracksInDatabase = await executeQuery({ text: "SELECT name, id from track where artist = $1 or artist = $2 and album = $3 or album = $4",
                                                 values: [scrobble.artist, artist, scrobble.album, album] });
   if (!tracksInDatabase) {
-    // TODO: BAD? even if there's nothing, create something? or we can't have nothing? think how returning null can be positive for catching weird shit
     return null
   }
   
@@ -297,7 +302,7 @@ const findOrCreateTrack = async (scrobble: Scrobble, artist: Artist, album: Albu
   const closestEntries: ClosestEntries = findClosestEntries(tracksInDatabase, scrobble.name);
   const track: UserRequest = await promptUserAndProcess("track", closestEntries, scrobble.name);
   if (track.newEntryName !== undefined) {
-    const newTrack = new Track(track.newEntryName, album, artist);
+    const newTrack = new Track(track.newEntryName, [artist.name], [artist.id], album.name, album.id, null, null, artist.category, album.year, album.genre);
     track.data = await createTrack(newTrack);
   }
   return track.data as Track;
@@ -425,6 +430,8 @@ export const getRecentTimestamp = async () => {
 /*********************************************************************************************************************** */
 
 export const deleteTracksAlbumsArtists = async function () {
+  await executeQuery({ text: 'DELETE FROM "trackArtist"' });
+  await executeQuery({ text: 'DELETE FROM "albumArtist"' });
   await executeQuery({ text: 'DELETE FROM track' });
   await executeQuery({ text: 'DELETE FROM album' });
   await executeQuery({ text: 'DELETE FROM artist' });

@@ -5,15 +5,15 @@ import { Genre } from "./genre.model";
 
 export interface ITrack {
     name: string;
-    album: Album;
-    artist: Artist;
+    artist: string[];
+    artist_id: number[];
+    album?: string;
+    album_id?: number;
     duration?: number;
     track_no?: number;
-    category?: Category;
+    category?: string;
     year?: number;
     genre?: Genre[] | string[];
-    artist_id?: number;
-    album_id?: number;
     id?: number;
     other_names?: string[];
 }
@@ -21,15 +21,15 @@ export interface ITrack {
 export class Track implements ITrack {
     constructor(
         public name: string,
-        public album: Album,
-        public artist: Artist,
+        public artist: string[],
+        public artist_id: number[],
+        public album?: string,
+        public album_id?: number,
         public duration?: number,
         public track_no?: number,
-        public category?: Category,
+        public category?: string,
         public year?: number,
         public genre?: Genre[] | string[],
-        public artist_id?: number,
-        public album_id?: number,
         public id?: number,
         public other_names?: string[]
         ) {}

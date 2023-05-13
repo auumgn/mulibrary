@@ -66,13 +66,12 @@ export const getTracks = async () => {
   }
   catch (err) {
     console.error("Rolling back, error:", err)
+    // TODO: recalculate scrobbles after rolling back
     const res = rollbackScrobbleImport(timestamp, scrobbleTimestamp);
     console.log(res);
   }
 
 }
-
-// TODO: Convert "other name" to array
 
 await deleteScrobblesAndTimestamp();
 getTracks();

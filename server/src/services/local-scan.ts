@@ -5,7 +5,7 @@ import { Artist } from '../models/artist.model.js';
 import { Category } from '../models/category.model.js';
 import { Track } from '../models/track.model.js';
 import { Album } from '../models/album.model.js';
-import { createAlbum, createArtist, createTrack, deleteTracksAlbumsArtists, updateAlbum } from '../controllers/database-access.js';
+import { createAlbum, createArtist, createTrack, deleteTracksAlbumsArtists, updateArtwork } from '../controllers/database-access.js';
 
 const audioExtensions = ["aax", "aac", "aiff", "ape", "flac", "m4a", "mp3", "ogg", "wav", "wma"];
 const artworkExtensions = ["jpg", "png"];
@@ -33,7 +33,7 @@ const scanLocalMachine = async function (dirPath: string) {
         artist = undefined;
       }
       if (pathArray.length === 2) {
-        artist = new Artist(pathArray[1], category);
+        artist = new Artist(pathArray[1], category.name);
         const createArtistResponse = await createArtist(artist);
         if (createArtistResponse) {
           artist.id = createArtistResponse.id;
@@ -52,7 +52,7 @@ const scanLocalMachine = async function (dirPath: string) {
 
         // create album using track metadata
         if (!album) {
-          album = new Album(artist, artist?.id || null, filterAlbumName(metadata.common.album) || filterAlbumName(pathArray[2]))
+          album = new Album(filterAlbumName(metadata.common.album) || filterAlbumName(pathArray[2]), [artist?.name] || null,  [artist?.id] || null, metadata.common.year, metadata.common.genre, null, null, null, null, category.name)
           album.genre = metadata.common.genre;
           album.year = metadata.common.year;
           
@@ -65,26 +65,25 @@ const scanLocalMachine = async function (dirPath: string) {
             duplicateAlbum = true;
           }
         }
-
         // remove this check?
         if (!duplicateAlbum) {
           const track = new Track(
             metadata.common.title || file,
-            album,
-            artist,
+            [artist.name],
+            [artist.id],
+            album.name,
+            album.id,
             metadata.format.duration,
             metadata.common.track.no,
-            category,
+            category.name,
             metadata.common.year,
-            metadata.common.genre,
-            artist?.id || null,
-            album?.id || null)
-          album?.tracks.push(track);
+            metadata.common.genre)
+          album?.tracks.push(track.id);
           await createTrack(track);
         }
 
+      // artwork
       } else if (artworkExtensions.includes(fullPath.split(/\.(?=[^\.]+$)/)[1])) {
-        // artwork
         const pathArray = (dirPath + '\\' + file).replace(dirPath, '').split('\\').filter(p => p);
         // in case album artwork needs to be stored with a category/artist/album folder structure
         /* const dir = `./content/artwork/${pathArray[0]}/${pathArray[1]}/${pathArray[2]}`;
@@ -95,16 +94,18 @@ const scanLocalMachine = async function (dirPath: string) {
           fs.copyFileSync(dirPath + '\\' + file, dir + '\\' + file);
           if (album?.id) {
             album.artwork.push()
-            await updateAlbum(album);
+            await updateArtwork(album);
           }
         } */
         if (album?.id) {
           const dir = process.cwd() + `\\src\\content\\artwork\\`;
           const artworkFilename = album.id + '_' + file;
-          if (!fs.existsSync(dir + artworkFilename)) {
-            fs.copyFileSync(dirPath + '\\' + file, dir + artworkFilename);
-            album.artwork.push(artworkFilename);
-            await updateAlbum(album);
+          if (!album.artwork.find(art => art === artworkFilename)) {
+            if (!fs.existsSync(dir + artworkFilename)) {
+              fs.copyFileSync(dirPath + '\\' + file, dir + artworkFilename);
+              album.artwork.push(artworkFilename);
+              await updateArtwork(album);
+            }
           }
         }
       }
@@ -120,5 +121,5 @@ const filterAlbumName = (name: string) : string | null => {
   }
 }
 
-//await deleteTracksAlbumsArtists();
+await deleteTracksAlbumsArtists();
 scanLocalMachine(BASE_MUSIC_FOLDER);

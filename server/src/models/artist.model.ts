@@ -4,7 +4,7 @@ import { Genre } from "./genre.model";
 
 export interface IArtist {
     name: string;
-    category?: Category;
+    category?: string;
     genre?: Genre[];
     id?: number;
     other_names?: string[];
@@ -14,7 +14,7 @@ export interface IArtist {
 export class Artist implements IArtist {
     constructor(
         public name: string,
-        public category?: Category,
+        public category?: string,
         public genre?: Genre[],
         public id?: number,
         public other_names?: string[],
