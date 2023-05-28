@@ -121,5 +121,5 @@ const filterAlbumName = (name: string) : string | null => {
   }
 }
 
-await deleteTracksAlbumsArtists();
+//await deleteTracksAlbumsArtists();
 scanLocalMachine(BASE_MUSIC_FOLDER);

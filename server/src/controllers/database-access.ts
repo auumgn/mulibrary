@@ -8,6 +8,7 @@ import { stringDistance } from './distance-checker';
 import promptSync from "prompt-sync";
 const Pool = pg.Pool;
 const prompt = promptSync();
+const debug = true;
 
 const pool = new Pool({
   host: 'localhost',
@@ -21,7 +22,7 @@ export const createAlbum = async (album: Album): Promise<Album | null> => {
   if (existingAlbums && existingAlbums.length !== 0) {
     console.error("Duplicate album", existingAlbums[0].name, existingAlbums[0].artist);
     const album = new Album(existingAlbums[0].artist, existingAlbums[0].artist_id, existingAlbums[0].name, existingAlbums[0].year, existingAlbums[0].genre, existingAlbums[0].artwork, existingAlbums[0].id);
-      return album;
+    return album;
   } else {
     const query = {
       text: 'INSERT INTO album(name, artist, year, category, artwork, artist_id) VALUES($1, $2, $3, $4, $5, $6) RETURNING *',
@@ -67,10 +68,11 @@ const getAlbumByName = async function (album: string, artist: string[]) {
     text: `SELECT al.* from album al inner join "albumArtist" aa on al.id = aa.album_id
     INNER JOIN artist ar on ar.id = aa.artist_id 
     WHERE (lower(al.name) = $1 or $1 ILIKE any(al.other_names)) 
-    AND ($2 && ar.other_names OR lower(ar.name) = any($2))`,
+    AND ($2::text[] && (ar.other_names) OR lower(ar.name) = any($2::text[]))`,
     values: [album.toLowerCase(), artist.map(a => a.toLowerCase())],
   }
-
+  if (debug) console.log("getalbum by name", query);
+  
   const res = await executeQuery(query);
   return res;
 }
@@ -182,17 +184,21 @@ const getTrackByName = async function (name: string, artist: string[], album_id?
     text: `SELECT t.* from track t INNER JOIN "trackArtist" ta ON t.id = ta.track_id
     INNER JOIN artist a ON ta.artist_id = a.id
     WHERE (lower(t.name) = $1 or $1 ILIKE any(t.other_names))
-    AND (($2 && a.other_names OR lower(a.name) = any($2)) or t.album_id = $3)
+    AND (($3::integer IS NULL AND ($2 && a.other_names OR lower(a.name) ILIKE ANY($2))) or t.album_id = $3::integer)
     AND (t.track_no = $4 OR $4 IS NULL)`,
     values: [name.toLowerCase(), artist.map(a => a.toLowerCase()), album_id, track_no],
   }
+  if (debug) console.log("get track by name", query, );
+
   // execute query and return result
   const res = await executeQuery(query);
+  console.log("what", res);
+  
   return res;
 }
 
 const getEntryById = async function (type: string, id: number) {
-  const res = await executeQuery(`SELECT * from ${type} where id = ${id.toString()})`);
+  const res = await executeQuery(`SELECT * from ${type} where id = ${id.toString()}`);
   return res;
 }
 
@@ -234,6 +240,8 @@ export const addPlaycount = async function (scrobble: Scrobble) {
   }
 
   const matchingTrack = await getTrackByName(scrobble.name, [artist.name], album.id || null);
+  console.log(matchingTrack);
+  
   if (matchingTrack.length === 1) {
     track = matchingTrack[0];
   } else {
@@ -244,14 +252,9 @@ export const addPlaycount = async function (scrobble: Scrobble) {
   }
 
   const query = {
-    text: 'UPDATE track set plays = plays + 1 where (name = $1 or name = $2) and (artist = $3 or artist = $4) and (album = $5 or album = $6)',
-    values: [scrobble.name, track.name, scrobble.artist, artist.name, scrobble.album, album.name],
+    text: 'UPDATE track set plays = plays + 1 where id = $1',
+    values: [track.id],
   }
-  let formattedQuery = `${query.text}`;
-  for (let i = 1; i < query.values.length; i++) {
-    formattedQuery = formattedQuery.replace("$" + i.toString(), query.values[i - 1]);
-  }
-  console.log(formattedQuery);
 
   const res = await executeQuery(query);
   return res;
@@ -273,12 +276,16 @@ const findOrCreateArtist = async (scrobble: Scrobble): Promise<Artist> => {
   return artist.data as Artist;
 }
 
+// Only to be used in the "addplaycount" method, as it expects an existing artist??
 const findOrCreateAlbum = async (scrobble: Scrobble, artist: Artist): Promise<Album> => {
-  const albumsInDatabase = await executeQuery({ text: "SELECT name, id from album where artist = $1 or artist = $2", values: [scrobble.artist, artist] });
+  const query = { text: "SELECT name, id from album where $1 = any(artist_id)", values: [artist.id] };
+  if (debug) console.log("findOrCreateAlbum", query);
+  
+  const albumsInDatabase = await executeQuery(query);
   if (!albumsInDatabase) {
     return null
   }
-  
+
   console.log(`Missing album, scrobble info: `, scrobble.artist, ",", scrobble.album, ",", scrobble.name);
   console.log("Closest db names: ");
   const closestEntries: ClosestEntries = findClosestEntries(albumsInDatabase, scrobble.album);
@@ -290,16 +297,24 @@ const findOrCreateAlbum = async (scrobble: Scrobble, artist: Artist): Promise<Al
   return album.data as Album;
 }
 
+// Only to be used in the "addplaycount" method, as it expects an existing artist and album??
 const findOrCreateTrack = async (scrobble: Scrobble, artist: Artist, album: Album): Promise<Track> => {
-  const tracksInDatabase = await executeQuery({ text: "SELECT name, id from track where artist = $1 or artist = $2 and album = $3 or album = $4",
-                                                values: [scrobble.artist, artist, scrobble.album, album] });
+  const query = {
+    text: "SELECT name, id from track where album_id = $1",
+    values: [album.id]
+  }
+  if (debug) console.log("findOrCreateTrack", query);
+  const tracksInDatabase = await executeQuery(query);
+  console.log(tracksInDatabase);
+  
   if (!tracksInDatabase) {
     return null
   }
-  
-  console.log(`Missing album, scrobble info: `, scrobble.artist, ",", scrobble.album, ",", scrobble.name);
+
+  console.log(`Missing track, scrobble info: `, scrobble.artist, ",", scrobble.album, ",", scrobble.name);
   console.log("Closest db names: ");
   const closestEntries: ClosestEntries = findClosestEntries(tracksInDatabase, scrobble.name);
+  if (closestEntries && closestEntries['0']) {}
   const track: UserRequest = await promptUserAndProcess("track", closestEntries, scrobble.name);
   if (track.newEntryName !== undefined) {
     const newTrack = new Track(track.newEntryName, [artist.name], [artist.id], album.name, album.id, null, null, artist.category, album.year, album.genre);
@@ -316,6 +331,16 @@ type UserRequest = {
 const promptUserAndProcess = async (type: string, closestEntries: ClosestEntries, scrobbleName: string): Promise<UserRequest> => {
   let validId = false;
   const userPrompt: UserRequest = {};
+  // There might be more than 1 identical matches (e.g. two tracks with identical names on the same album)
+  // We don't have enough information in the scrobble to differentiate between them, so return any first match
+  if (closestEntries && closestEntries['0']) {
+    const res: Artist[] | Album[] | Track[] = await getEntryById(type, closestEntries['0'][0].id);
+      if (res && res.length > 0) {
+        userPrompt.data = res[0];
+        return userPrompt;
+      }
+  }
+  // Otherwise let the person choose by himself
   while (!validId) {
     let existingEntryIndex = prompt(`Please choose ${type} id from the array above: `);
     // artist/album/track chosen from the provided options
@@ -331,16 +356,16 @@ const promptUserAndProcess = async (type: string, closestEntries: ClosestEntries
     } else if (existingEntryIndex.startsWith("id")) {
       const res: Artist[] | Album[] | Track[] = await getEntryById(type, existingEntryIndex.slice(2));
       if (res && res.length > 0) {
-          validId = true;
-          userPrompt.data = res[0];
-          return userPrompt;
-        }
+        validId = true;
+        userPrompt.data = res[0];
+        return userPrompt;
+      }
       else {
         console.log("Invalid id provided");
       }
       // create new artist/album/track
-    } else if (existingEntryIndex.startsWith("create ")) {
-      userPrompt.newEntryName = existingEntryIndex.slice(7);
+    } else if (existingEntryIndex === "create") {
+      userPrompt.newEntryName = scrobbleName;
       return userPrompt;
     } else if (existingEntryIndex === "skip") {
       return undefined;
@@ -372,7 +397,7 @@ const findClosestEntries = (databaseEntries: any, entryName: string): ClosestEnt
     sortedEntriesLimit++;
   }
   return closestEntries;
-} 
+}
 
 /****************************************************************************************************************************************** */
 
@@ -440,6 +465,7 @@ export const deleteTracksAlbumsArtists = async function () {
 export const deleteScrobblesAndTimestamp = async function () {
   await executeQuery({ text: 'DELETE FROM scrobbles' });
   await executeQuery({ text: 'DELETE FROM sync_timestamp' })
+  await executeQuery({ text: 'UPDATE track set plays = 0' })
 }
 
 /*********************************************************************************************************************** */
