@@ -17,19 +17,3 @@ export interface ILastFMTrack {
     id: string;
     '@attr': {nowplaying: boolean}
 }
-
-export interface IScrobble {
-    name: string;
-    artist: string;
-    album: string;
-    timestamp: number
-}
-
-export class Scrobble implements IScrobble {
-    constructor(
-        public name: string,
-        public artist: string,
-        public album: string,
-        public timestamp: number
-    ) {}
-}

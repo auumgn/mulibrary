@@ -1,9 +1,9 @@
 import pg from 'pg'
 import { Album } from '../models/album.model';
 import { Artist } from '../models/artist.model';
-import { Scrobble } from '../models/lastfm.model';
+import { Scrobble } from '../models/scrobble.model';
 import { ITrack, Track } from '../models/track.model';
-import * as config from "./config.json";
+import * as config from "../db/config.json";
 import { stringDistance } from './distance-checker';
 import promptSync from "prompt-sync";
 const Pool = pg.Pool;
@@ -211,7 +211,7 @@ const updateOtherNames = async (type: string, newOtherName: string, id: number) 
   return res;
 }
 
-export const addPlaycount = async function (scrobble: Scrobble) {
+export const addPlaycount = async function (scrobble: Scrobble): Promise<Track> {
   // names found in the database
   let artist: Artist;
   let album: Album;
@@ -252,12 +252,16 @@ export const addPlaycount = async function (scrobble: Scrobble) {
   }
 
   const query = {
-    text: 'UPDATE track set plays = plays + 1 where id = $1',
+    text: 'UPDATE track set plays = plays + 1 where id = $1 RETURNING *',
     values: [track.id],
   }
 
   const res = await executeQuery(query);
-  return res;
+  if (res && res.length > 0) {
+    return res[0];
+  } else {
+    return null;
+  }
 }
 
 const findOrCreateArtist = async (scrobble: Scrobble): Promise<Artist> => {
@@ -403,8 +407,8 @@ const findClosestEntries = (databaseEntries: any, entryName: string): ClosestEnt
 
 export const insertScrobble = async (scrobble: Scrobble) => {
   const query = {
-    text: 'INSERT into scrobbles(name, artist, album, timestamp) VALUES($1, $2, $3, $4)',
-    values: [scrobble.name, scrobble.artist, scrobble.album, scrobble.timestamp],
+    text: 'INSERT into scrobbles(name, artist, album, timestamp, track_id, artist_id, album_id, category) VALUES($1, $2, $3, $4, $5, $6, $7, $8)',
+    values: [scrobble.name, scrobble.artist, scrobble.album, scrobble.timestamp, scrobble.track_id, scrobble.artist_id, scrobble.album_id, scrobble.category],
   }
   const res = await executeQuery(query);
   return res;

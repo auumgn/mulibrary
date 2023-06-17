@@ -1,0 +1,17 @@
+import { Album } from '../models/album.model';
+import { Artist } from '../models/artist.model';
+import { Scrobble } from '../models/scrobble.model';
+import { ITrack, Track } from '../models/track.model';
+export declare const createAlbum: (album: Album) => Promise<Album | null>;
+export declare const updateArtwork: (album: Album) => Promise<Album | null>;
+export declare const createArtist: (artist: Artist) => Promise<Artist | null>;
+export declare const updateArtist: (artist: Artist) => Promise<Artist | null>;
+export declare const createTrack: (track: ITrack) => Promise<Track | null>;
+export declare const addPlaycount: (scrobble: Scrobble) => Promise<Track>;
+export declare const insertScrobble: (scrobble: Scrobble) => Promise<any[]>;
+export declare const getLatestScrobbleTimestamp: () => Promise<any[]>;
+export declare const rollbackScrobbleImport: (timestamp: number, scrobbleTimestamp: number) => Promise<any[][]>;
+export declare const insertSyncTimestamp: (timestamp: number) => Promise<any[]>;
+export declare const getRecentTimestamp: () => Promise<any[]>;
+export declare const deleteTracksAlbumsArtists: () => Promise<void>;
+export declare const deleteScrobblesAndTimestamp: () => Promise<void>;
