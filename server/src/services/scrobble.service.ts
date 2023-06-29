@@ -24,27 +24,36 @@ export class ScrobbleService {
     return res.rows;
   }
 
-  async getArtistScrobbles(range: number): Promise<Scrobble[]> {
+  async getTopArtists(range: number): Promise<Scrobble[]> {
     const query = {
-      text: 'select artist, count(artist) from "mulibrary"."scrobbles" where timestamp > $1 group by artist order by count(artist) desc limit 10',
+      text: 'select artist, count(artist) as playcount, category from "mulibrary"."scrobbles" where timestamp > $1 group by artist, category order by count(artist) desc limit 10',
       values: [range],
     };
     const res = await this.conn.query(query);
     return res.rows;
   }
 
-  async getAlbumScrobbles(range: number): Promise<Scrobble[]> {
+  async getTopAlbums(range: number): Promise<Scrobble[]> {
     const query = {
-      text: 'select album, count(album), artist from "mulibrary"."scrobbles" where timestamp > $1 group by album, artist order by count(album) desc limit 10',
+      text: 'select album, count(album) as playcount, artist, category from "mulibrary"."scrobbles" where timestamp > $1 group by album, artist, category order by count(album) desc limit 10',
       values: [range],
     };
     const res = await this.conn.query(query);
     return res.rows;
   }
 
-  async getTrackScrobbles(range: number): Promise<Scrobble[]> {
+  async getAlbumScrobbles(id:number, range: number): Promise<Scrobble[]> {
     const query = {
-      text: 'select name, count(name), artist from "mulibrary"."scrobbles" where timestamp > $1 group by name, artist order by count(name) desc limit 10',
+      text: 'select album, count(album) as playcount, artist, category from "mulibrary"."scrobbles" where timestamp > $1 group by album, artist, category order by count(album) desc limit 10',
+      values: [range],
+    };
+    const res = await this.conn.query(query);
+    return res.rows;
+  }
+
+  async getTopTracks(range: number): Promise<Scrobble[]> {
+    const query = {
+      text: 'select name, count(name) as playcount, artist, category from "mulibrary"."scrobbles" where timestamp > $1 group by name, artist, category order by count(name) desc limit 10',
       values: [range],
     };
     const res = await this.conn.query(query);

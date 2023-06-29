@@ -8,7 +8,7 @@ export interface IScrobble {
   album_id?: number;
   category?: string;
   // remove pls
-  count?: number;
+  playcount?: number;
 }
 
 /*
@@ -35,7 +35,7 @@ export class Scrobble implements IScrobble {
     public album_id?: number,
     public category?: string,
   // remove pls
-    public count?: number
+    public playcount?: number
   ) {}
 }
 

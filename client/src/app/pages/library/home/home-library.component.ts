@@ -1,8 +1,9 @@
 import { Component, OnInit } from "@angular/core";
 import { ICategoryScrobbles, IScrobble } from "../../../shared/models/scrobble.model";
 import { getTimestampMonthsAgo, getTimestampYearsAgo } from "src/app/shared/utils/date.util";
-import { ScrobbleService } from "../core/services/scrobble.service";
-import { Chart } from "chart.js/auto";
+import { ScrobbleService } from "../../../core/services/scrobble.service";
+import { CategoryScale, Chart, Filler, LineController, LineElement, LinearScale, PointElement } from "chart.js";
+import { calculateBarWidth } from "src/app/shared/utils/calculate-bar-width";
 
 @Component({
   selector: "app-home-library",
@@ -11,8 +12,7 @@ import { Chart } from "chart.js/auto";
 })
 export class HomeLibraryComponent implements OnInit {
   chart: any;
-  periods = [3, 12, 60];
-
+  periods = [3, 12];
   recentScrobbles: IScrobble[] | null = null;
 
   topArtists: { [period: number]: IScrobble[] } = {};
@@ -24,20 +24,20 @@ export class HomeLibraryComponent implements OnInit {
   constructor(private scrobbleService: ScrobbleService) {}
   // should you have a multiuse model e.g. scrobble or have smaller ones like ArtistScrobble TrackScrobble etc
   ngOnInit(): void {
+    Chart.register(LineController, PointElement, LineElement, LinearScale, CategoryScale, Filler);
     // add unsubscribe
     this.scrobbleService
       .getRecentTracks(1, 10)
       .subscribe((scrobbles: IScrobble[] | null) => (this.recentScrobbles = scrobbles));
 
     this.scrobbleService.getCategoryScrobbles().subscribe((categories: ICategoryScrobbles | null) => {
-      console.log(categories);
-      
       this.categories = categories;
       this.createChart();
     });
     this.periods.forEach((period) => {
       this.scrobbleService.getTopArtists(getTimestampMonthsAgo(period)).subscribe((artists: IScrobble[]) => {
         this.topArtists[period] = artists;
+        
       });
       this.scrobbleService.getTopAlbums(getTimestampMonthsAgo(period)).subscribe((albums: IScrobble[]) => {
         this.topAlbums[period] = albums;
@@ -48,24 +48,6 @@ export class HomeLibraryComponent implements OnInit {
     });
   }
 
-  /*
-[
-            {
-              label: "Sales",
-              data: ["467", "576", "572", "79", "92", "574", "573", "576"],
-              borderColor: "#C7C7C7",
-              tension: 0.4,
-              borderWidth: 1,
-            },
-            {
-              label: "Profit",
-              data: ["542", "542", "536", "327", "17", "0.00", "538", "541"],
-              borderColor: "#C7C7C7",
-              tension: 0.4,
-              borderWidth: 1,
-            },
-          ]
-*/
   createChart() {
     const colors = [
       "#64748b",
@@ -101,17 +83,17 @@ export class HomeLibraryComponent implements OnInit {
       "#d9f99d",
     ];
     if (this.categories) {
-      console.log(this.categories);
+      const unfilteredDates = Object.values(this.categories).flatMap((value) =>
+        value.map((value) => new Date(value.date).toLocaleDateString("en-US", { year: "numeric", month: "short" }))
+      );
+      const dates = unfilteredDates.filter((value, index) => unfilteredDates.indexOf(value) === index);
 
       this.chart = new Chart("MyChart", {
-        type: "line", //this denotes tha type of chart
+        type: "line",
 
         data: {
           // values on X-Axis
-          labels: [
-            2009, 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019, 2020, 2019, 2022, 2023, 2009, 2010, 2011,
-            2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019, 2020, 2019, 2022, 2023,
-          ],
+          labels: dates,
           datasets: Object.keys(this.categories).map((category, i) => {
             return {
               label: category,
@@ -129,19 +111,21 @@ export class HomeLibraryComponent implements OnInit {
           responsive: true,
           maintainAspectRatio: false,
           aspectRatio: 2,
-          plugins: {
-            tooltip: {
-              mode: "index",
-            },
-            legend: {
-              display: false,
-            },
-          },
 
           scales: {
             y: {
               stacked: true,
+              ticks: {
+                display: false,
+              },
+              
             },
+            x: {
+              ticks: {
+                  maxRotation: 90,
+                  minRotation: 50
+              }
+          }
           },
         },
       });

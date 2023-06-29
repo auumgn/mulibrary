@@ -14,25 +14,33 @@ export class ScrobbleController {
     return this.scrobbleService.getRecentScrobbles(page, pageSize);
   }
 
-  @Get('artist') // /scrobbles/artist
+  @Get('artists') // /scrobbles/artist
   getArtistScrobbles(
     @Query('range') range: number,
   ): Promise<Scrobble[]> {
-    return this.scrobbleService.getArtistScrobbles(range);
+    return this.scrobbleService.getTopArtists(range);
+  }
+
+  @Get('albums') // /scrobbles/album
+  getTopAlbums(
+    @Query('range') range: number,
+  ): Promise<Scrobble[]> {
+    return this.scrobbleService.getTopAlbums(range);
   }
 
   @Get('album') // /scrobbles/album
   getAlbumScrobbles(
+    @Query('id') id: number,
     @Query('range') range: number,
   ): Promise<Scrobble[]> {
-    return this.scrobbleService.getAlbumScrobbles(range);
+    return this.scrobbleService.getAlbumScrobbles(id, range);
   }
 
-  @Get('track') // /scrobbles/track
+  @Get('tracks') // /scrobbles/track
   getTrackScrobbles(
     @Query('range') range: number,
   ): Promise<Scrobble[]> {
-    return this.scrobbleService.getTrackScrobbles(range);
+    return this.scrobbleService.getTopTracks(range);
   }
 
   @Get('category') // /scrobbles/category

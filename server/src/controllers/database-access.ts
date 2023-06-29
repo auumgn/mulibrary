@@ -252,7 +252,7 @@ export const addPlaycount = async function (scrobble: Scrobble): Promise<Track> 
   }
 
   const query = {
-    text: 'UPDATE track set plays = plays + 1 where id = $1 RETURNING *',
+    text: 'UPDATE track set playcount = playcount + 1 where id = $1 RETURNING *',
     values: [track.id],
   }
 
@@ -469,7 +469,7 @@ export const deleteTracksAlbumsArtists = async function () {
 export const deleteScrobblesAndTimestamp = async function () {
   await executeQuery({ text: 'DELETE FROM scrobbles' });
   await executeQuery({ text: 'DELETE FROM sync_timestamp' })
-  await executeQuery({ text: 'UPDATE track set plays = 0' })
+  await executeQuery({ text: 'UPDATE track set playcount = 0' })
 }
 
 /*********************************************************************************************************************** */

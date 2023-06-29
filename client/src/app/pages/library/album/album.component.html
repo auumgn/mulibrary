@@ -1,0 +1,64 @@
+<ng-container *ngIf="album !== undefined">
+  <div class="flex mb-14">
+    <!-- Title and metadata -->
+    <div class="flex-1">
+      <h1 class="text-3xl mb-10 font-semibold">{{ album.name }}</h1>
+      <div class="flex text-sm">
+        <div class="w-40 album-metadata text-stone-400">
+          <div>Artist</div>
+          <div *ngIf="album.year">Release date</div>
+          <div *ngIf="album.category">Category</div>
+          <div *ngIf="length && length > 0">Length</div>
+          <div *ngIf="trackPlays && trackPlays > 0">Track plays</div>
+          <div *ngIf="albumPlays && albumPlays > 0">Album plays</div>
+          <div *ngIf="tags">Tags</div>
+        </div>
+        <div class="album-metadata">
+          <div>
+            <ng-container *ngFor="let artist of album.artist; index as i"
+              >{{ artist }}<span *ngIf="i < album.artist!.length - 1">, </span></ng-container
+            >
+          </div>
+          <div *ngIf="album.year">{{ album.year }}</div>
+          <div *ngIf="album.category">{{ album.category }}</div>
+          <div *ngIf="length && length > 0">{{ length | formatDuration }}</div>
+          <div *ngIf="trackPlays && trackPlays > 0">{{ trackPlays }}</div>
+          <div *ngIf="albumPlays && albumPlays > 0">{{ albumPlays }}</div>
+          <div *ngIf="tags">Tags</div>
+        </div>
+      </div>
+    </div>
+    <div class="h-[300px] w-[300px]">
+      <div *ngIf="album.artwork && album.artwork.length > 0">
+        <img [src]="cover" alt="Album cover image" (error)="setPlaceholderAlbumCover()" />
+      </div>
+    </div>
+  </div>
+  <h2 class="mb-10">Tracklist</h2>
+  <!-- TRACKS -->
+  <div class="flex text-stone-400">
+    <div class="mr-5 min-w-[20px] text-xs text-center">#</div>
+    <div class="w-2/3 text-xs">Title</div>
+    <div class="text-xs w-[100px]">Duration</div>
+    <div class="text-xs min-w-[300px]">Plays</div>
+  </div>
+  <hr class="border-neutral-700 mb-4 mt-2" />
+  <ul>
+    <li *ngFor="let track of tracks; index as i">
+      <div class="flex items-center h-10">
+        <div class="mr-5 min-w-[20px] text-sm text-stone-400 text-center">{{ i + 1 }}</div>
+        <div class="min-w-0 w-2/3 pr-5 text-sm overflow-hidden text-ellipsis whitespace-nowrap">
+          {{ track.name }}
+        </div>
+        <div class="text-sm pr-4 w-[100px]">{{ track.duration | formatDuration }}</div>
+        <div class="min-w-[300px] flex items-center">
+          <div class="w-5/6">
+            <div class="bar bg-teal-900 h-3 mt-[1px]" [style.width.%]="calculateBarWidth(tracks, track.playcount)"></div>
+          </div>
+          <div class="text-sm text-right w-1/6">{{ track.playcount }}</div>
+        </div>
+      </div>
+      <hr *ngIf="tracks && i < tracks.length - 1" class="mb-2 mt-2 border-neutral-800" />
+    </li>
+  </ul>
+</ng-container>
