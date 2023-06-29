@@ -3,3 +3,4 @@
 server/node_modules
 server/src/controllers/config.json
 server/src/content/artwork
+server/dist
