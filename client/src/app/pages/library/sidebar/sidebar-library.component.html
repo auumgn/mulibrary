@@ -2,6 +2,7 @@
   ><div
     *ngIf="!isParentNodeCollapsed(node)"
     class="flex node text-sm"
+    [style.background-color]="node.selected ? '#393939' : null"
     [style.paddingLeft]="node.level * 20 + 'px'"
     [attr.aria-level]="node.level + 1"
   >
@@ -28,7 +29,6 @@
       class="mb-1 flex-1"
       [ngStyle]="{ 'padding-left': !node.expandable && '20px' }"
       (click)="selectNode(node)"
-      [style.background-color]="node.selected ? '#393939' : null"
     >
       {{ node.name }}
     </div>

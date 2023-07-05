@@ -9,9 +9,6 @@ import { SharedModule } from "src/app/shared/shared.module";
 import { TopArtistsComponent } from "./home/top/top-artists.component";
 import { TopAlbumsComponent } from "./home/top/top-albums.component";
 import { TopTracksComponent } from "./home/top/top-tracks.component";
-import { MatTreeModule } from "@angular/material/tree";
-import { MatButtonModule } from "@angular/material/button";
-import { MatIconModule } from "@angular/material/icon";
 import { AlbumComponent } from './album/album.component';
 
 const routes: Routes = [
@@ -41,6 +38,6 @@ const routes: Routes = [
     TopTracksComponent,
     AlbumComponent
   ],
-  imports: [CommonModule, RouterModule.forChild(routes), SharedModule, MatTreeModule, MatButtonModule, MatIconModule],
+  imports: [CommonModule, RouterModule.forChild(routes), SharedModule],
 })
 export class LibraryModule {}
