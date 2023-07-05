@@ -1,271 +1,259 @@
-import { CollectionViewer, SelectionChange, DataSource } from "@angular/cdk/collections";
-import { FlatTreeControl } from "@angular/cdk/tree";
-import { Component, Injectable, OnInit, ViewEncapsulation } from "@angular/core";
-import { BehaviorSubject, combineLatest, EMPTY, merge, Observable, of } from "rxjs";
-import { filter, map, switchMap, take, tap } from "rxjs/operators";
-import { MatProgressBarModule } from "@angular/material/progress-bar";
-import { NgIf } from "@angular/common";
-import { MatIconModule } from "@angular/material/icon";
-import { MatButtonModule } from "@angular/material/button";
-import { MatTreeModule } from "@angular/material/tree";
-import { AlbumService } from "../../../core/services/album.service";
-import { ArtistService } from "../../../core/services/artist.service";
+import { Component, OnInit, ViewEncapsulation } from "@angular/core";
+import { CategoryService } from "src/app/core/services/category.service";
+import { combineLatest, filter, map, take } from "rxjs";
 import { Category } from "src/app/shared/models/category.model";
+import { ArtistService } from "src/app/core/services/artist.service";
 import { Artist } from "src/app/shared/models/artist.model";
 import { Album } from "src/app/shared/models/album.model";
-import { CategoryService } from "../../../core/services/category.service";
-import { ActivatedRoute, Params, Router } from "@angular/router";
+import { AlbumService } from "src/app/core/services/album.service";
 import { normalizeName } from "src/app/shared/utils/normalize-name.util";
+import { ActivatedRoute, Router } from "@angular/router";
 
-export class DynamicFlatNode {
+interface Data {
+  [normalizedName: string]: {
+    name: string;
+    type: string;
+    level: number;
+    expanded?: boolean;
+    selected?: boolean;
+    children?: Data;
+    data?: Category | Artist | Album;
+  };
+}
+
+export class FlatNode {
   constructor(
-    public item: string,
+    public name: string,
     public level = 1,
     public data?: Album | Artist,
+    public expanded = false,
     public expandable = false,
-    public selected = false,
-    public isLoading = false
+    public selected = false
   ) {}
-}
-
-@Injectable({ providedIn: "root" })
-export class DynamicDatabase {
-  artists: Artist[] = [];
-  categories: Category[] = [];
-  activeNode: string | undefined;
-  constructor(
-    private artistService: ArtistService,
-    private categoryService: CategoryService,
-    private albumService: AlbumService
-  ) {}
-  dataMap = new Map<Category | Artist | Album, Artist[] | Album[]>();
-  data: DynamicFlatNode[] = [];
-
-  getChildren(node: Category | Artist | Album): Artist[] | Album[] | undefined {
-    return this.dataMap.get(node);
-  }
-
-  getArtistsByCategory(category: string, force = false): Observable<Artist[]> {
-    return this.artistService.getArtistsByCategory(category, force);
-  }
-
-  getAlbumsByArtistName(name: string): Observable<Album[]> {
-    return this.albumService.getAlbumsByArtistName(normalizeName(name));
-  }
-
-  isExpandable(node: Category | Artist | Album): boolean {
-    return this.dataMap.has(node);
-  }
-}
-
-export class DynamicDataSource implements DataSource<DynamicFlatNode> {
-  dataChange = new BehaviorSubject<DynamicFlatNode[]>([]);
-  expandedNodes: DynamicFlatNode[] = [];
-
-  get data(): DynamicFlatNode[] {
-    return this.dataChange.value;
-  }
-  set data(value: DynamicFlatNode[]) {
-    this._treeControl.dataNodes = value;
-    this.dataChange.next(value);
-  }
-
-  constructor(
-    private _treeControl: FlatTreeControl<DynamicFlatNode>,
-    private _database: DynamicDatabase,
-    private albumService: AlbumService,
-    private router: Router
-  ) {}
-
-  connect(collectionViewer: CollectionViewer): Observable<DynamicFlatNode[]> {
-    this._treeControl.expansionModel.changed.subscribe((change) => {
-      if ((change as SelectionChange<DynamicFlatNode>).added || (change as SelectionChange<DynamicFlatNode>).removed) {
-        this.handleTreeControl(change as SelectionChange<DynamicFlatNode>);
-      }
-    });
-    return merge(collectionViewer.viewChange, this.dataChange).pipe(map(() => this.data));
-  }
-
-  disconnect(collectionViewer: CollectionViewer): void {}
-
-  handleTreeControl(change: SelectionChange<DynamicFlatNode>) {
-    console.log("CAHAAAAAAAAAAAANGE", change)
-    if (change.added) {
-      change.added.forEach((node) => this.toggleNode(node, true));
-      console.log(this.expandedNodes, this._treeControl.dataNodes)
-      this.expandedNodes.forEach((expandedNode) => {
-        const match = this._treeControl.dataNodes.find(
-          (n) =>
-            n.item === expandedNode.item &&
-            n.level === expandedNode.level
-        );
-        console.log(match);
-        if (match && !this._treeControl.isExpanded(match)) this.toggleNode(match, true);
-        this.expandedNodes = this.expandedNodes.filter(node => node !== match)
-      });
-    }
-    if (change.removed) {
-      change.removed
-        .slice()
-        .reverse()
-        .forEach((node) => this.toggleNode(node, false));
-    }
-  }
-
-  setActiveNode(node: DynamicFlatNode) {
-    this._treeControl.dataNodes.forEach((node) => (node.selected = false));
-    node.selected = true;
-  }
-
-  async toggleNode(node: DynamicFlatNode, expand: boolean, force = false) {
-    const index = this.data.indexOf(node);
-    node.isLoading = true;
-
-    // EXPAND NODE
-    if (expand) {
-      const urlArtistName = this.router.url.split("/")[3];
-      const urlAlbumName = this.router.url.split("/")[4];
-      const path = this.router.url.split("/")[2];
-      if (node.level === 0) {
-        console.log(node)
-        this._database
-          .getArtistsByCategory(node.data!.name, force)
-          .pipe(take(1))
-          .subscribe((artists) => {
-            console.log(artists);
-            const nodes = artists.map((artist) => new DynamicFlatNode(artist.name, node.level + 1, artist, true));
-
-            this.data.splice(index + 1, 0, ...nodes);
-            this.dataChange.next(this.data);
-            node.isLoading = false;
-
-            return;
-          });
-      }
-      if (node.level === 1) {
-        if (node.data && node.data.id) {
-          this._database
-            .getAlbumsByArtistName(node.data.name)
-            .pipe(take(1))
-            .subscribe((albums) => {
-              console.log(albums);
-              
-              const nodes = albums.map((album) => new DynamicFlatNode(album.name, node.level + 1, album, false));
-              const activeAlbum = nodes.find((album) => normalizeName(album.item) === urlAlbumName);
-              if (activeAlbum) this.setActiveNode(activeAlbum);
-              this.data.splice(index + 1, 0, ...nodes);
-              this.dataChange.next(this.data);
-              node.isLoading = false;
-            });
-        } else console.error(node);
-      }
-    } else {
-      this._treeControl.dataNodes.forEach((n) => {
-        if (this._treeControl.isExpanded(n)) this.expandedNodes.push(n);
-      });
-
-      let count = 0;
-      for (let i = index + 1; i < this.data.length && this.data[i].level > node.level; i++, count++) {}
-      this.data.splice(index + 1, count);
-      this.dataChange.next(this.data);
-      node.isLoading = false;
-    }
-  }
 }
 
 @Component({
   selector: "app-sidebar-library",
-  templateUrl: "./sidebar-library.component.html",
-  styleUrls: ["./sidebar-library.component.css"],
+  templateUrl: "sidebar-library.component.html",
+  styleUrls: ["sidebar-library.component.css"],
   encapsulation: ViewEncapsulation.None,
 })
 export class SidebarLibraryComponent implements OnInit {
+  data: Data = {};
+  flatData: FlatNode[] = [];
+  routePath = "";
+  routeArtist = "";
+  routeAlbum = "";
+  routeCategory = "";
   constructor(
-    private database: DynamicDatabase,
-    private albumService: AlbumService,
-    private artistService: ArtistService,
     private categoryService: CategoryService,
-    protected activatedRoute: ActivatedRoute,
-    protected router: Router
-  ) {
-    this.treeControl = new FlatTreeControl<DynamicFlatNode>(this.getLevel, this.isExpandable);
-    this.dataSource = new DynamicDataSource(this.treeControl, database, albumService, this.router);
-  }
-  data: DynamicFlatNode[] = [];
-
-  categories: Category[] = [];
-  artists: Artist[] = [];
-
-  treeControl: FlatTreeControl<DynamicFlatNode>;
-
-  dataSource: DynamicDataSource;
-
-  getLevel = (node: DynamicFlatNode) => node.level;
-
-  isExpandable = (node: DynamicFlatNode) => node.expandable;
-
-  hasChild = (_: number, _nodeData: DynamicFlatNode) => _nodeData.expandable;
+    private artistService: ArtistService,
+    private albumService: AlbumService,
+    protected router: Router,
+    protected activatedRoute: ActivatedRoute
+  ) {}
 
   ngOnInit(): void {
     const routes = this.router.url.split("/");
-    const path = routes[2];
-    const artistName = routes[3];
-    const albumName = routes[4];
-    let index = 0;
-    if (path === "album" && artistName) {
-      let albums: Album[];
-      combineLatest([this.categoryService.getCategories(), this.albumService.getAlbumsByArtistName(artistName, true)])
-        .pipe(
-          take(1),
-          filter((categories) => categories !== null),
-          switchMap((data) => {
-            
-            if (data[0] && data[0].length > 0) {
-              data[0].map((category) => {
-                this.data.push(new DynamicFlatNode(category.name, 0, category, true));
-              });
+    this.routePath = routes[2];
+    this.routeArtist = routes[3];
+    this.routeAlbum = routes[4];
+    this.categoryService.getCategories().subscribe((categories: Category[]) => {
+      categories.map((category) => {
+        this.data[category.name] = { name: category.name, type: "category", data: category, level: 0, children: {} };
+      });
+      this.updateTree(this.data);
+      if (this.routePath === "artist")
+        this.expandNode(this.flatData.find((node) => normalizeName(node.name) === this.routeArtist)!);
+      if (this.routePath === "album") {
+        this.loadAlbumFromUrl();
+      }
+    });
+  }
 
-              this.dataSource.data = this.data;
-            }
-            if (data[1] && data[1].length > 0 && data[1][0].category) {
-              const categoryNode = this.data.find((category) => category.item === data[1][0].category);
+  loadAlbumFromUrl() {
+    console.log("heh");
+    combineLatest([
+      this.categoryService.getCategories(),
+      this.albumService.getAlbumsByArtistName(this.routeArtist, true),
+    ])
+      .pipe(
+        take(1),
+        filter((categories) => categories !== null),
+        map((data) => {
+          console.log("heh", data);
+
+          const [categories, albums] = data;
+          if (categories && categories.length > 0) {
+            categories.map((category) => {
+              this.data[category.name] = {
+                name: category.name,
+                type: "category",
+                data: category,
+                level: 0,
+                children: {},
+              };
+            });
+          }
+          this.updateTree(this.data);
+          if (albums && albums.length > 0 && albums[0].category) {
+            const categoryName = albums[0].category;
+            const artistName = albums[0].artist?.join("-");
+            const categoryNode = this.flatData.find((node) => node.name === categoryName && node.level === 0);
+            if (artistName) {
               if (categoryNode) {
-                this.treeControl.expand(categoryNode);
+                this.expandNode(categoryNode).then(() => {
+                  const artistNode = this.flatData.find(
+                    (node) => normalizeName(artistName) === normalizeName(node.name) && node.level === 1
+                  );
+                  if (artistNode)
+                    this.expandNode(artistNode).then(() => {
+                      console.log(this.flatData);
+                      const albumNode = this.flatData.find((node) => normalizeName(node.name) === this.routeAlbum && node.level === 2);
+                      if (albumNode) this.selectNode(albumNode);
+                    });
+                });
               }
+            }
+          }
+        })
+      )
+      .subscribe();
+  }
 
-              albums = data[1];
-              return this.artistService.getArtistsByCategory(data[1][0].category);
-            }
-            return EMPTY;
-          }),
-          tap(() => {
-            const artistNode = this.data.find((artist) => normalizeName(artist.item) === artistName);
-            if (artistNode) {
-              this.treeControl.expand(artistNode);
-            }
-            const albumNode = this.data.find((album) => normalizeName(album.item) === albumName);
-            if (albumNode) this.dataSource.setActiveNode(albumNode);
-          })
-        )
-        .subscribe();
+  flattenData(data: Data) {
+    let processChildren = false;
+    let expandable = false;
+    let childNodes: Data;
+    Object.values(data).flatMap((node) => {
+      if (processChildren) {
+        processChildren = false;
+        this.flattenData(childNodes);
+      }
+      if (node.children && Object.keys(node.children).length > 0) {
+        childNodes = node.children;
+        processChildren = true;
+      }
+      if (node.children) expandable = true;
+      this.flatData.push(new FlatNode(node.name, node.level, node.data, node.expanded, expandable, node.selected));
+    });
+  }
+
+  updateTree(data: Data) {
+    this.flatData = [];
+    this.flattenData(data);
+  }
+
+  selectNode(node: FlatNode) {
+    let path = "";
+
+    this.flatData.forEach((n) => {
+      if (node === n) n.selected = true;
+      else n.selected = false;
+    });
+    const name = normalizeName(node.name);
+    if (node.level === 0) this.data[node.name].selected = true;
+    if (node.level === 1) this.data[node.data!.category!].children![name].selected = true;
+    if (node.level === 2) {
+      const album: Album = node.data as Album;
+      const artistName = normalizeName(album.artist!.join("-"));
+      this.data[node.data!.category!].children![artistName].selected = true;
+      path = "album";
+      this.router.navigate(["library", path, artistName, normalizeName(node.name)]);
     }
   }
 
-  selectNode(node: DynamicFlatNode) {
-    let path = "";
-    if (node.data) {
-      this.dataSource.setActiveNode(node);
-      //if (node.level === 0) path = 'category'
-      //if (node.level === 1) path = 'artist'
+  getCollapsedParentNode(node: FlatNode): FlatNode | null {
+    const currentLevel = node.level;
 
-      // open album component
-      if (node.level === 2) {
-        path = "album";
-        const album: Album = node.data;
-        if (album.artist) {
-          const artistName = album.artist.map((artist) => normalizeName(artist)).join("-");
-          this.router.navigate(["library", path, artistName, normalizeName(album.name)]);
-        } else console.error("album artist missing:", album);
+    if (currentLevel < 1) {
+      return null;
+    }
+
+    const index = this.flatData.indexOf(node) - 1;
+
+    for (let i = index; i >= 0; i--) {
+      const currentNode = this.flatData[i];
+
+      if (currentNode.level < currentLevel) {
+        if (!currentNode.expanded) return currentNode;
+        else {
+          return this.getCollapsedParentNode(currentNode);
+        }
+      }
+    }
+    return null;
+  }
+
+  isParentNodeCollapsed(node: FlatNode): boolean {
+    const parent = this.getCollapsedParentNode(node);
+    if (!parent) return false;
+    else return true;
+  }
+
+  async expandNode(node: FlatNode): Promise<void> {
+    node.expanded = !node.expanded;
+    if (node.level === 0) {
+      const categoryName = node.name;
+      this.data[categoryName].expanded = node.expanded;
+      // If we're expanding the node and it hasn't been loaded before then load the children
+      if (node.expanded && Object.values(this.data[categoryName].children!).length === 0)
+        await new Promise<void>((resolve, reject) =>
+          this.artistService
+            .getArtistsByCategory(categoryName)
+            .pipe(take(1))
+            .subscribe((artists: Artist[]) => {
+              artists.map((artist: Artist) => {
+                const artistName = normalizeName(artist.name);
+                if (!this.data[categoryName].children!.hasOwnProperty(artistName)) {
+                  this.data[categoryName].children![artistName] = {
+                    name: artist.name,
+                    data: artist,
+                    type: "artist",
+                    level: 1,
+                    children: {},
+                  };
+                }
+              });
+              this.updateTree(this.data);
+              resolve();
+            })
+        );
+    }
+    if (node.level === 1) {
+      const normalizedArtistName = normalizeName(node.name);
+      const categoryName = node.data?.category;
+      if (categoryName) {
+        this.data[categoryName].children![normalizedArtistName].expanded = node.expanded;
+        // If we're expanding the node and it hasn't been loaded before then load the children
+        if (
+          node.expanded &&
+          Object.values(this.data[categoryName].children![normalizedArtistName].children!).length === 0
+        )
+          await new Promise<void>((resolve, reject) =>
+            this.albumService
+              .getAlbumsByArtistName(normalizeName(normalizedArtistName))
+              .pipe(take(1))
+              .subscribe((albums: Album[]) => {
+                albums.map((album: Album) => {
+                  const normalizedAlbumName = normalizeName(album.name);
+                  if (
+                    !this.data[categoryName].children![normalizedArtistName].children!.hasOwnProperty(
+                      normalizedAlbumName
+                    )
+                  ) {
+                    this.data[categoryName].children![normalizedArtistName].children![normalizedAlbumName] = {
+                      name: album.name,
+                      data: album,
+                      type: "album",
+                      level: 2,
+                    };
+                  }
+                });
+                this.updateTree(this.data);
+                resolve();
+              })
+          );
       }
     }
   }
