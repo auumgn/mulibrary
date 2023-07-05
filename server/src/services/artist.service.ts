@@ -1,6 +1,7 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { PG_CONNECTION } from '../constants';
 import { Artist } from 'src/models/artist.model';
+import { ITreenode } from 'src/models/treenode.model';
 
 @Injectable()
 export class ArtistService {
@@ -14,11 +15,13 @@ export class ArtistService {
     return res.rows;
   }
 
-  async getArtists(): Promise<Artist[]> {
+  async getArtists(): Promise<ITreenode[]> {
     const query = {
-      text: 'select * from "mulibrary"."artist"',
+      text: 'select name as artist, category from "mulibrary"."artist" where category is not null',
     };
     const res = await this.conn.query(query);
+    console.log(res);
+    
     return res.rows;
   }
 }

@@ -14,8 +14,5 @@ export class MainLibraryComponent {
     })
   };
   constructor(protected http: HttpClient) {}
-  
-  fetchZhopa() {
-    this.http.get<string>('http://localhost:3000/zhopa', {responseType: 'text' as any}).subscribe((zhopen) => this.zhopen = zhopen)
-  }
+
 }

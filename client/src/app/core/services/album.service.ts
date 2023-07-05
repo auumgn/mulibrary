@@ -5,19 +5,48 @@ import { SERVER_API_URL } from "src/app/app.constants";
 import { Scrobble } from "src/app/shared/models/scrobble.model";
 import { Album } from "src/app/shared/models/album.model";
 import { normalizeName } from "src/app/shared/utils/normalize-name.util";
+import { ITreenode } from "src/app/shared/models/treenode.model";
 
 @Injectable({ providedIn: "root" })
 export class AlbumService {
   albums: BehaviorSubject<{ [artist_id: string]: Album[] }> = new BehaviorSubject<{ [artist_id: string]: Album[] }>({});
+  albumNodes: BehaviorSubject<ITreenode[]> = new BehaviorSubject<ITreenode[]>([]);
   // activeAlbum: Subject<>;
   constructor(private http: HttpClient) {}
+
+  getAlbumNodes(forceReload = false): Observable<ITreenode[]> {
+    if (this.albumNodes.value.length === 0 || forceReload) {
+      this.fetchAlbumNodes().subscribe();
+    }    
+    return this.albumNodes.pipe(
+      filter((albums) => albums && albums.length > 0)
+    );
+  }
+
+  fetchAlbumNodes(): Observable<void> {
+    return this.http
+    .get<ITreenode[]>(`${SERVER_API_URL}/album/all`, {
+      observe: "response",
+    })
+    .pipe(
+      catchError((error) => {
+        return of("Error occurred:", error);
+      }),
+      map((response) => {
+        if (response.status === 200) {
+          this.albums.next(response.body);
+        } else {
+          console.log("Request failed with status:", response.status);
+        }
+      })
+    );
+  }
 
   getAlbumsByArtistName(artistName: string, forceReload = false): Observable<Album[]> {
     if (!this.albums.value[artistName] || forceReload) {
       if (forceReload) this.albums.value[artistName] = []
       this.fetchAlbumsByArtistName(artistName).subscribe();
     }
-    console.log("wtf", artistName, this.albums.value[artistName]);
     
     return this.albums.pipe(
       map((albums) => {console.log(albums); return albums[artistName]}),

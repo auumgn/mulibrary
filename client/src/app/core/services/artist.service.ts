@@ -4,23 +4,25 @@ import { HttpClient } from "@angular/common/http";
 import { SERVER_API_URL } from "src/app/app.constants";
 import { Artist } from "src/app/shared/models/artist.model";
 import { Scrobble } from "src/app/shared/models/scrobble.model";
+import { ITreenode } from "src/app/shared/models/treenode.model";
 
 @Injectable({ providedIn: "root" })
 export class ArtistService {
   artists: BehaviorSubject<Artist[]> = new BehaviorSubject<Artist[]>([]);
+  artistNodes: BehaviorSubject<ITreenode[]> = new BehaviorSubject<ITreenode[]>([]);
 
   constructor(private http: HttpClient) {}
 
   getArtists(forceReload = false): Observable<any> {
-    if (!this.artists.value || forceReload) {
+    if (this.artistNodes.value.length === 0 || forceReload) {
       this.fetchArtists().subscribe();
     }
-    return this.artists.asObservable();
+    return this.artistNodes.pipe(filter(artists => artists && artists.length > 0));
   }
 
   fetchArtists(): any {
     return this.http
-      .get<Scrobble[]>(`${SERVER_API_URL}/artist/all`, {
+      .get<ITreenode[]>(`${SERVER_API_URL}/artist/all`, {
         observe: "response",
       })
       .pipe(
@@ -28,14 +30,13 @@ export class ArtistService {
           return of("Error occurred:", error);
         }),
         map((response) => {
+          console.log(response);
+
           if (response.status === 200) {
-            return response.body;
+            this.artistNodes.next(response.body);
           } else {
             console.log("Request failed with status:", response.status);
           }
-        }),
-        tap((response) => {
-          this.artists.next(response);
         })
       );
   }
@@ -47,10 +48,9 @@ export class ArtistService {
     ) {
       this.fetchArtistsByCategory(category).subscribe();
     }
-
     return this.artists.pipe(
-      map((artists) => artists.filter((artist) => artist.category === category)),
-      filter((artists) => artists.length > 0)
+      map((artists) => {console.log("artists:", artists); return artists.filter((artist) => {console.log("Art", artist);return artist.category === category})}),
+      filter((artists) => {console.log("artistos filter:", artists); return artists.length > 0})
     );
   }
 
@@ -75,6 +75,7 @@ export class ArtistService {
         }),
         tap((response) => {
           this.artists.next(Array.from(new Set([...this.artists.value, ...response])));
+          console.log(this.artists.value);
         })
       );
   }

@@ -1,5 +1,5 @@
 import { Controller, Get } from '@nestjs/common';
-import { Category } from 'src/models/category.model';
+import { ITreenode } from 'src/models/treenode.model';
 import { CategoryService } from 'src/services/category.service';
 
 @Controller('category')
@@ -8,7 +8,7 @@ export class CategoryController {
 
   @Get('all')
   getRecentScrobbles(
-  ): Promise<Category[]> {
+  ): Promise<ITreenode[]> {
     return this.categoryService.getCategories();
   }
 }

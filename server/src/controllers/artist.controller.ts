@@ -1,6 +1,6 @@
 import { Controller, Get, Query } from '@nestjs/common';
 import { Artist } from 'src/models/artist.model';
-import { Category } from 'src/models/category.model';
+import { ITreenode } from 'src/models/treenode.model';
 import { ArtistService } from 'src/services/artist.service';
 
 @Controller('artist')
@@ -13,7 +13,9 @@ export class ArtistController {
   }
 
   @Get('all')
-  getArtists(): Promise<Artist[]> {
+  getArtists(): Promise<ITreenode[]> {
+    console.log("sdlfjh");
+    
     return this.artistService.getArtists();
   }
 }

@@ -1,0 +1,69 @@
+.example-tree-invisible {
+  display: none;
+}
+
+.example-tree ul,
+.example-tree li {
+  margin-top: 0;
+  margin-bottom: 0;
+  list-style-type: none;
+}
+
+/*
+   * This padding sets alignment of the nested nodes.
+   */
+
+.mat-tree {
+  background: none;
+}
+
+.mdc-icon-button,
+.mat-mdc-button-persistent-ripple,
+.mat-mdc-button-touch-target {
+  width: 24px !important;
+  height: 24px !important;
+  padding: 0px !important;
+}
+
+mat-icon {
+  margin-top: 7px !important;
+  color: gray;
+}
+
+.mat-icon-rtl-mirror {
+  font-size: 13px;
+}
+
+.mat-tree-node[aria-level="2"],
+.mat-tree-node[aria-level="3"] {
+  position: relative;
+}
+
+.mat-tree-node[aria-level="3"]::after,
+.mat-tree-node[aria-level="2"]::before,
+.mat-tree-node[aria-level="3"]::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 12px;
+  bottom: 0;
+  width: 1px;
+  background-color: #757575;
+  mix-blend-mode: color-dodge;
+}
+
+.mat-tree-node[aria-level="3"]::before {
+  left: 32px;
+}
+
+.mat-tree-node[aria-level="2"]::before,
+.mat-tree-node[aria-level="3"]::before {
+  height: 100%;
+}
+
+
+.mat-tree-node span {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}

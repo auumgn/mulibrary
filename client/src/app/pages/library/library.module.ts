@@ -3,6 +3,9 @@ import { CommonModule } from "@angular/common";
 import { RouterModule, Routes } from "@angular/router";
 import { MainLibraryComponent } from "./main/main-library.component";
 import { SidebarLibraryComponent } from "./sidebar/sidebar-library.component";
+import { SidebarLibraryTestComponent } from "./sidebar/sidebar-library-test.component";
+import { SidebarLibraryDiyComponent } from "./sidebar/sidebar-library-diy.component";
+
 import { HomeLibraryComponent } from "./home/home-library.component";
 import { SharedModule } from "src/app/shared/shared.module";
 import { TopArtistsComponent } from "./home/top/top-artists.component";
@@ -33,6 +36,8 @@ const routes: Routes = [
 @NgModule({
   declarations: [
     SidebarLibraryComponent,
+    SidebarLibraryDiyComponent,
+    SidebarLibraryTestComponent,
     MainLibraryComponent,
     HomeLibraryComponent,
     TopArtistsComponent,

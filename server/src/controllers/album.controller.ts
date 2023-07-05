@@ -1,6 +1,6 @@
 import { Controller, Get, Query } from '@nestjs/common';
 import { Album } from 'src/models/album.model';
-import { Category } from 'src/models/category.model';
+import { ITreenode } from 'src/models/treenode.model';
 import { AlbumService } from 'src/services/album.service';
 
 @Controller('album')
@@ -22,4 +22,8 @@ export class AlbumController {
     return this.albumService.getAlbumByName(album, artist);
   }
   
+  @Get('all')
+  getAlbums(): Promise<ITreenode[]> {
+    return this.albumService.getAlbums();
+  }
 }
