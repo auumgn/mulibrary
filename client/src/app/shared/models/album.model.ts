@@ -12,6 +12,8 @@ export interface IAlbum {
     id?: number;
     other_names?: string[];
     category?: string;
+    scrobbles?: number;
+    duration?: number;
 }
 
 export class Album implements IAlbum {
@@ -25,6 +27,8 @@ export class Album implements IAlbum {
         public id?: number,
         public tracks?: number[],
         public other_names?: string[],
-        public category?: string
+        public category?: string,
+        public scrobbles?: number,
+        public duration?: number
     ) {this.tracks = []; this.artwork = []}
 }

@@ -20,7 +20,16 @@ export class ArtistService {
       text: 'select name as artist, category from "mulibrary"."artist" where category is not null',
     };
     const res = await this.conn.query(query);
-    console.log(res);
+    
+    return res.rows;
+  }
+
+  async getArtistByName(name: string): Promise<Artist[]> {
+    const query = {
+      text: 'select * from "mulibrary"."artist" where $1 = "mulibrary"."normalize_name"(name)',
+      values: [name]
+    };
+    const res = await this.conn.query(query);
     
     return res.rows;
   }

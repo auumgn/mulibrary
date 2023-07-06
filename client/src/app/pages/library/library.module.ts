@@ -10,6 +10,7 @@ import { TopArtistsComponent } from "./home/top/top-artists.component";
 import { TopAlbumsComponent } from "./home/top/top-albums.component";
 import { TopTracksComponent } from "./home/top/top-tracks.component";
 import { AlbumComponent } from './album/album.component';
+import { ArtistComponent } from './artist/artist.component';
 
 const routes: Routes = [
   {
@@ -23,6 +24,10 @@ const routes: Routes = [
       {
         path: "album/:artist/:album",
         component: AlbumComponent
+      },
+      {
+        path: "artist/:artist",
+        component: ArtistComponent
       }
     ],
   },
@@ -36,7 +41,8 @@ const routes: Routes = [
     TopArtistsComponent,
     TopAlbumsComponent,
     TopTracksComponent,
-    AlbumComponent
+    AlbumComponent,
+    ArtistComponent
   ],
   imports: [CommonModule, RouterModule.forChild(routes), SharedModule],
 })

@@ -36,7 +36,6 @@ export class FlatNode {
   selector: "app-sidebar-library",
   templateUrl: "sidebar-library.component.html",
   styleUrls: ["sidebar-library.component.css"],
-  encapsulation: ViewEncapsulation.None,
 })
 export class SidebarLibraryComponent implements OnInit {
   data: Data = {};
@@ -56,23 +55,20 @@ export class SidebarLibraryComponent implements OnInit {
   ngOnInit(): void {
     const routes = this.router.url.split("/");
     this.routePath = routes[2];
-    this.routeArtist = routes[3];
-    this.routeAlbum = routes[4];
-    this.categoryService.getCategories().subscribe((categories: Category[]) => {
+    this.routeArtist = decodeURI(routes[3]);
+    this.routeAlbum = decodeURI(routes[4]);
+    // TODO: remove the extra "getCategories" call
+    this.categoryService.getCategories(true).subscribe((categories: Category[]) => {
       categories.map((category) => {
         this.data[category.name] = { name: category.name, type: "category", data: category, level: 0, children: {} };
       });
       this.updateTree(this.data);
-      if (this.routePath === "artist")
-        this.expandNode(this.flatData.find((node) => normalizeName(node.name) === this.routeArtist)!);
-      if (this.routePath === "album") {
-        this.loadAlbumFromUrl();
-      }
+      if (this.routePath === "artist") this.loadArtistPageFromUrl();
+      if (this.routePath === "album") this.loadAlbumPageFromUrl();
     });
   }
 
-  loadAlbumFromUrl() {
-    console.log("heh");
+  loadArtistPageFromUrl() {
     combineLatest([
       this.categoryService.getCategories(),
       this.albumService.getAlbumsByArtistName(this.routeArtist, true),
@@ -81,44 +77,78 @@ export class SidebarLibraryComponent implements OnInit {
         take(1),
         filter((categories) => categories !== null),
         map((data) => {
-          console.log("heh", data);
-
           const [categories, albums] = data;
-          if (categories && categories.length > 0) {
-            categories.map((category) => {
-              this.data[category.name] = {
-                name: category.name,
-                type: "category",
-                data: category,
-                level: 0,
-                children: {},
-              };
-            });
-          }
-          this.updateTree(this.data);
-          if (albums && albums.length > 0 && albums[0].category) {
-            const categoryName = albums[0].category;
-            const artistName = albums[0].artist?.join("-");
-            const categoryNode = this.flatData.find((node) => node.name === categoryName && node.level === 0);
-            if (artistName) {
-              if (categoryNode) {
-                this.expandNode(categoryNode).then(() => {
-                  const artistNode = this.flatData.find(
-                    (node) => normalizeName(artistName) === normalizeName(node.name) && node.level === 1
-                  );
-                  if (artistNode)
-                    this.expandNode(artistNode).then(() => {
-                      console.log(this.flatData);
-                      const albumNode = this.flatData.find((node) => normalizeName(node.name) === this.routeAlbum && node.level === 2);
-                      if (albumNode) this.selectNode(albumNode);
-                    });
-                });
-              }
-            }
-          }
+          this.addCategoriesToDatabase(categories);
+          this.findAndExpandCategory(albums).then(() => {
+            const artistNode = this.flatData.find(
+              (node) => normalizeName(node.name) === this.routeArtist && node.level === 1
+            );
+            if (artistNode) this.selectNode(artistNode);
+          });
         })
       )
       .subscribe();
+  }
+
+  loadAlbumPageFromUrl() {
+    combineLatest([
+      this.categoryService.getCategories(),
+      // TODO: only need to get category of artist = get category by artist?
+      this.albumService.getAlbumsByArtistName(this.routeArtist, true),
+    ])
+      .pipe(
+        take(1),
+        filter((categories) => categories !== null),
+        map((data) => {
+          const [categories, albums] = data;
+          this.addCategoriesToDatabase(categories);
+
+          this.findAndExpandCategory(albums).then(() => {
+            const artistName = albums[0].artist?.join("-");
+            if (artistName) {
+              const artistNode = this.flatData.find(
+                (node) => normalizeName(artistName) === normalizeName(node.name) && node.level === 1
+              );
+              if (artistNode)
+                this.expandNode(artistNode).then(() => {
+                  console.log(this.flatData);
+                  const albumNode = this.flatData.find(
+                    (node) => normalizeName(node.name) === this.routeAlbum && node.level === 2
+                  );
+                  if (albumNode) this.selectNode(albumNode);
+                });
+            }
+          });
+        })
+      )
+      .subscribe();
+  }
+
+  async findAndExpandCategory(albums: Album[]): Promise<void> {
+    if (albums && albums.length > 0 && albums[0].category) {
+      const categoryName = albums[0].category;
+      const artistName = albums[0].artist?.join("-");
+      const categoryNode = this.flatData.find((node) => node.name === categoryName && node.level === 0);
+      if (artistName) {
+        if (categoryNode) {
+          return this.expandNode(categoryNode);
+        }
+      }
+    }
+  }
+
+  addCategoriesToDatabase(categories: Category[]) {
+    categories.map((category) => {
+      this.data[category.name] = {
+        name: category.name,
+        type: "category",
+        data: category,
+        level: 0,
+        children: {},
+      };
+    });
+
+    this.updateTree(this.data);
   }
 
   flattenData(data: Data) {
@@ -153,12 +183,16 @@ export class SidebarLibraryComponent implements OnInit {
     });
     const name = normalizeName(node.name);
     if (node.level === 0) this.data[node.name].selected = true;
-    if (node.level === 1) this.data[node.data!.category!].children![name].selected = true;
+    if (node.level === 1) {
+      path = "artist";
+      this.data[node.data!.category!].children![name].selected = true;
+      this.router.navigate(["library", path, normalizeName(node.name)]);
+    }
     if (node.level === 2) {
+      path = "album";
       const album: Album = node.data as Album;
       const artistName = normalizeName(album.artist!.join("-"));
       this.data[node.data!.category!].children![artistName].selected = true;
-      path = "album";
       this.router.navigate(["library", path, artistName, normalizeName(node.name)]);
     }
   }
@@ -200,9 +234,9 @@ export class SidebarLibraryComponent implements OnInit {
       if (node.expanded && Object.values(this.data[categoryName].children!).length === 0)
         await new Promise<void>((resolve, reject) =>
           this.artistService
-            .getArtistsByCategory(categoryName)
-            .pipe(take(1))
+            .getArtistsByCategory(categoryName, true)
             .subscribe((artists: Artist[]) => {
+              
               artists.map((artist: Artist) => {
                 const artistName = normalizeName(artist.name);
                 if (!this.data[categoryName].children!.hasOwnProperty(artistName)) {

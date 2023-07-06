@@ -1,8 +1,11 @@
+import { Album } from "../models/album.model";
 import { IScrobble } from "../models/scrobble.model";
 import { Track } from "../models/track.model";
-
-export function calculateBarWidth(scrobbles: IScrobble[] | Track[], count: number | undefined): number {
-  const maxCount: number = Math.max(...scrobbles.map((track) => track.playcount || 0));
+// TODO: change scrobbles to "scrobbles: IScrobble[] | Track[] | Album[]" after playcount in models is renamed to scrobbles
+export function calculateBarWidth(scrobbles: any, count: number | undefined): number {
+  
+  const maxCount: number = Math.max(...scrobbles.map((item: any) => (item.playcount ? item.playcount : item.scrobbles) || 0));
+  console.log(maxCount);
   if (!count || maxCount === 0) {
     return 0;
   }

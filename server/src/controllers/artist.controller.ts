@@ -14,8 +14,11 @@ export class ArtistController {
 
   @Get('all')
   getArtists(): Promise<ITreenode[]> {
-    console.log("sdlfjh");
-    
     return this.artistService.getArtists();
+  }
+
+  @Get()
+  getArtistByName(@Query('artist') artist: string): Promise<Artist[]> {
+    return this.artistService.getArtistByName(artist);
   }
 }

@@ -5,10 +5,12 @@ import { SERVER_API_URL } from "src/app/app.constants";
 import { Artist } from "src/app/shared/models/artist.model";
 import { Scrobble } from "src/app/shared/models/scrobble.model";
 import { ITreenode } from "src/app/shared/models/treenode.model";
+import { normalizeName } from "src/app/shared/utils/normalize-name.util";
 
 @Injectable({ providedIn: "root" })
 export class ArtistService {
   artists: BehaviorSubject<Artist[]> = new BehaviorSubject<Artist[]>([]);
+  // TODO: this is huh what?    v
   artistNodes: BehaviorSubject<ITreenode[]> = new BehaviorSubject<ITreenode[]>([]);
 
   constructor(private http: HttpClient) {}
@@ -40,6 +42,49 @@ export class ArtistService {
         })
       );
   }
+
+  getArtistByName(name: string, forceReload = false): Observable<Artist> {
+    if (
+      this.artists.value.length === 0 ||
+      forceReload ||
+      !this.artists.value.find((artist) => artist.category === name)
+    ) {
+      this.fetchArtistByName(name).subscribe();
+    }
+    // TODO: add interceptor for various calls to see if anything is being returned incorrectly e.g. this function returns two artists when you should only have one
+    return this.artists.pipe(
+      map((artists) => artists.filter((artist) => normalizeName(artist.name) === name)[0]),
+    );
+  }
+
+  fetchArtistByName(artist: string): any {
+    return this.http
+      .get<Artist>(`${SERVER_API_URL}/artist`, {
+        params: {
+          artist,
+        },
+        observe: "response",
+      })
+      .pipe(
+        catchError((error) => {
+          return of(error);
+        }),
+        map((response) => {
+          console.log(response);
+          
+          if (response.status === 200) {
+            return response.body;
+          } else {
+            console.log("Request failed:", response);
+          }
+        }),
+        tap((response) => {
+          this.artists.next(Array.from(new Set([...this.artists.value, ...response])));
+          console.log(this.artists.value);
+        })
+      );
+  }
+
   getArtistsByCategory(category: string, forceReload = false): Observable<Artist[]> {
     if (
       this.artists.value.length === 0 ||
@@ -49,8 +94,8 @@ export class ArtistService {
       this.fetchArtistsByCategory(category).subscribe();
     }
     return this.artists.pipe(
-      map((artists) => {console.log("artists:", artists); return artists.filter((artist) => {console.log("Art", artist);return artist.category === category})}),
-      filter((artists) => {console.log("artistos filter:", artists); return artists.length > 0})
+      map((artists) => {/* console.log("artists:", artists);  */return artists.filter((artist) => {/* console.log("Art", artist); */return artist.category === category})}),
+      filter((artists) => {/* console.log("artistos filter:", artists); */ return artists.length > 0})
     );
   }
 
