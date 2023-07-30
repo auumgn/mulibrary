@@ -8,7 +8,7 @@ export class ArtistService {
   constructor(@Inject(PG_CONNECTION) private conn: any) {}
   async getArtistsByCategory(category: string): Promise<Artist[]> {
     const query = {
-      text: 'select * from "mulibrary"."artist" where category = $1',
+      text: 'select * from "mulibrary"."artist" where "mulibrary"."normalize_name"(category) = $1',
       values: [category],
     };
     const res = await this.conn.query(query);

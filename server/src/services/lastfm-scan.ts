@@ -105,11 +105,21 @@ export const getTracks = async () => {
     }
   } catch (err) {
     console.error('Rolling back, error:', err);
-    // TODO: recalculate scrobbles after rolling back
+    // TODO: recalculate scrobbles in track/album/artist tables after rolling back
     const res = rollbackScrobbleImport(timestamp, scrobbleTimestamp);
     console.log(res);
   }
 };
+// album
+/* UPDATE album AS a
+SET track_plays = (
+  SELECT SUM(t.play_count)
+  FROM tracks AS t
+  WHERE t.album_name = a.album_name
+)
+ */ 
+// artist
+//update "mulibrary"."artist" as ar set scrobbles = (select countt from (select sum(playcount) as countt, ta.artist_id as aid from  "mulibrary"."track" tr inner join "mulibrary"."trackArtist" ta on tr.id = ta.track_id group by ta.artist_id) as what where ar.id = what.aid);
 
 async function main() {
   //await deleteScrobblesAndTimestamp();

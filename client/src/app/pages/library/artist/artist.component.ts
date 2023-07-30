@@ -1,5 +1,5 @@
 import { Component, OnDestroy, OnInit } from "@angular/core";
-import { ActivatedRoute } from "@angular/router";
+import { ActivatedRoute, Router } from "@angular/router";
 import { EMPTY, Subject, combineLatest, switchMap, take, takeUntil } from "rxjs";
 import { AlbumService } from "src/app/core/services/album.service";
 import { ArtistService } from "src/app/core/services/artist.service";
@@ -7,6 +7,10 @@ import { Album } from "src/app/shared/models/album.model";
 import { Artist } from "src/app/shared/models/artist.model";
 import { calculateBarWidth } from "src/app/shared/utils/calculate-bar-width";
 import { FormatDuration } from "src/app/shared/pipes/format-track-duration";
+import { normalizeName } from "src/app/shared/utils/normalize-name.util";
+import { debug } from "src/app/shared/utils/debug-util";
+import { FlatNode } from "../sidebar/sidebar-library.component";
+import { TreeviewService } from "src/app/core/services/treeview-service";
 
 @Component({
   selector: "app-artist",
@@ -17,7 +21,9 @@ export class ArtistComponent implements OnInit, OnDestroy {
   constructor(
     private artistService: ArtistService,
     private albumService: AlbumService,
-    private activatedRoute: ActivatedRoute
+    private treeviewService: TreeviewService,
+    protected activatedRoute: ActivatedRoute,
+    protected router: Router
   ) {}
   calculateBarWidth = calculateBarWidth;
   destroy$ = new Subject();
@@ -35,28 +41,28 @@ export class ArtistComponent implements OnInit, OnDestroy {
         switchMap((params) => {
           if (params["artist"]) {
             const { artist } = params;
+            console.log("artist page artist:", artist)
             return combineLatest([
               this.artistService.getArtistByName(artist),
               this.albumService.getAlbumsByArtistName(artist),
-            ]);
+            ]).pipe(take(1));
           }
           return EMPTY;
-        }),
-      take(1)
+        })
       )
       .subscribe((data) => {
+        debug("artist component returning artist and albums:", data)
         const [artist, albums] = data;
         this.albums = albums;
         this.artist = artist;
+        if (artist) this.treeviewService.updateActiveNode(new FlatNode(artist.name, 1, artist, true, true, true))
         this.albums.map((album) => {
           if (album && album.artwork && album.artwork.length > 0 && album.artwork![0].slice(2).slice(0, -2)) {
-            
             album.artwork = ["http://localhost:3000/artwork/" + album.artwork![0].slice(2).slice(0, -2)];
-          } 
+          }
         });
 
         console.log(this.albums);
-        
 
         /*this.tracks = coll[1];
         coll[1].map(track => {
@@ -68,6 +74,11 @@ export class ArtistComponent implements OnInit, OnDestroy {
   }
 
   setPlaceholderAlbumCover() {}
+
+  navigateToAlbumPage(album: Album) {
+    // TODO: album.artist shouldn't be optional?
+    this.router.navigate(["library", "album", normalizeName(album.artist!.join('-')), normalizeName(album.name)]);
+  }
 
   ngOnDestroy(): void {
     this.destroy$.next(true);

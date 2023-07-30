@@ -28,7 +28,7 @@
     <div
       class="mb-1 flex-1"
       [ngStyle]="{ 'padding-left': !node.expandable && '20px' }"
-      (click)="selectNode(node)"
+      (click)="selectNode(node, true)"
     >
       {{ node.name }}
     </div>

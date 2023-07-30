@@ -5,7 +5,6 @@ import { Track } from "../models/track.model";
 export function calculateBarWidth(scrobbles: any, count: number | undefined): number {
   
   const maxCount: number = Math.max(...scrobbles.map((item: any) => (item.playcount ? item.playcount : item.scrobbles) || 0));
-  console.log(maxCount);
   if (!count || maxCount === 0) {
     return 0;
   }

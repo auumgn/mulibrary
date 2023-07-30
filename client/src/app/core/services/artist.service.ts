@@ -6,6 +6,7 @@ import { Artist } from "src/app/shared/models/artist.model";
 import { Scrobble } from "src/app/shared/models/scrobble.model";
 import { ITreenode } from "src/app/shared/models/treenode.model";
 import { normalizeName } from "src/app/shared/utils/normalize-name.util";
+import { debug } from "src/app/shared/utils/debug-util";
 
 @Injectable({ providedIn: "root" })
 export class ArtistService {
@@ -32,8 +33,6 @@ export class ArtistService {
           return of("Error occurred:", error);
         }),
         map((response) => {
-          console.log(response);
-
           if (response.status === 200) {
             this.artistNodes.next(response.body);
           } else {
@@ -70,7 +69,6 @@ export class ArtistService {
           return of(error);
         }),
         map((response) => {
-          console.log(response);
           
           if (response.status === 200) {
             return response.body;
@@ -80,7 +78,6 @@ export class ArtistService {
         }),
         tap((response) => {
           this.artists.next(Array.from(new Set([...this.artists.value, ...response])));
-          console.log(this.artists.value);
         })
       );
   }
@@ -94,8 +91,8 @@ export class ArtistService {
       this.fetchArtistsByCategory(category).subscribe();
     }
     return this.artists.pipe(
-      map((artists) => {/* console.log("artists:", artists);  */return artists.filter((artist) => {/* console.log("Art", artist); */return artist.category === category})}),
-      filter((artists) => {/* console.log("artistos filter:", artists); */ return artists.length > 0})
+      map((artists) => {return artists.filter((artist) => {return artist.category && normalizeName(artist.category) === category})}),
+      filter((artists) => { debug("Getting artists:", artists, "by category", category);  return artists.length > 0})
     );
   }
 
@@ -120,7 +117,6 @@ export class ArtistService {
         }),
         tap((response) => {
           this.artists.next(Array.from(new Set([...this.artists.value, ...response])));
-          console.log(this.artists.value);
         })
       );
   }

@@ -10,7 +10,7 @@
   <ul>
     <li *ngFor="let album of albums; index as i">
       <div class="flex mb-4">
-        <div class="text-sm mr-10 h-[50px] w-[50px]">
+        <div class="text-sm mr-10 h-[50px] w-[50px] hover:cursor-pointer" (click)="navigateToAlbumPage(album)">
           <img
             [src]="album.artwork && album.artwork.length > 0 && album.artwork[0]"
             alt="Album cover image"
@@ -18,7 +18,7 @@
           />
         </div>
         <div class="flex items-center flex-1">
-          <div class="w-2/3">
+          <div class="w-2/3 hover:cursor-pointer" (click)="navigateToAlbumPage(album)">
             <h2 class="text-base text-neutral-200">{{ album.name }}</h2>
             <div class="text-sm text-neutral-400">{{ album.year }}</div>
           </div>
@@ -36,20 +36,6 @@
           </div>
         </div>
       </div>
-      <!--         <div class="flex items-center h-5">
-          <div class="mr-5 min-w-[20px] text-sm text-stone-400 text-center">{{ i + 1 }}</div>
-          <div class="min-w-0 w-2/3 pr-5 text-sm overflow-hidden text-ellipsis whitespace-nowrap">
-            {{ album.name }}
-          </div>
-          <div class="text-sm pr-4 w-[100px]">{{ album.duration | formatDuration }}</div>
-          <div class="min-w-[300px] flex items-center">
-            <div class="w-5/6">
-              <div class="bar bg-teal-900 h-3 mt-[1px]" [style.width.%]="calculateBarWidth(album, album.playcount)"></div>
-            </div>
-            <div class="text-sm text-right w-1/6">{{ album.playcount }}</div>
-          </div>
-        </div>
-        <hr *ngIf="album && i < album.length - 1" class="mb-2 mt-2 border-neutral-800" /> -->
     </li>
   </ul>
 </ng-container>

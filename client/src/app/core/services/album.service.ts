@@ -6,6 +6,7 @@ import { Scrobble } from "src/app/shared/models/scrobble.model";
 import { Album } from "src/app/shared/models/album.model";
 import { normalizeName } from "src/app/shared/utils/normalize-name.util";
 import { ITreenode } from "src/app/shared/models/treenode.model";
+import { debug } from "src/app/shared/utils/debug-util";
 
 @Injectable({ providedIn: "root" })
 export class AlbumService {
@@ -33,6 +34,8 @@ export class AlbumService {
         return of("Error occurred:", error);
       }),
       map((response) => {
+        debug("fetchAlbumNodes() response", response)
+
         if (response.status === 200) {
           this.albums.next(response.body);
         } else {
@@ -43,28 +46,24 @@ export class AlbumService {
   }
 
   getAlbumsByArtistName(artistName: string, forceReload = false): Observable<Album[]> {
+    debug("getting albums by artist", artistName, "force reload", forceReload)
     if (!this.albums.value[artistName] || forceReload) {
       if (forceReload) this.albums.value[artistName] = []
       this.fetchAlbumsByArtistName(artistName).subscribe();
     }
-    
     return this.albums.pipe(
-      map((albums) => {console.log(albums); return albums[artistName]}),
-      filter((albums) => {console.log(albums); return albums && albums.length > 0})
+      map((albums) => {debug("mapping albums", albums, "by", artistName); return albums[artistName]}),
+      filter((albums) => {debug("Returning albums", albums, "by artist", artistName); return albums && albums.length > 0})
     );
   }
 
   getAlbumByName(album: string, artist: string, forceReload = false): Observable<Album | undefined> {
     if (!this.albums.value[artist] || forceReload) {
-      console.log(album, artist);
-      
       this.fetchAlbumByName(album, artist).subscribe();
     }
-    console.log("asdflkjsdf");
-    
     return this.albums.pipe(
       map((albums) => albums[artist]),
-      filter((albums) => {console.log("getAlbumByName", albums); return albums && albums.length > 0}),
+      filter((albums) => {return albums && albums.length > 0}),
       map((albums) => albums.find(existingAlbum => normalizeName(existingAlbum.name) === album)),
       
     );
@@ -95,12 +94,10 @@ export class AlbumService {
           return of("Error occurred:", error);
         }),
         map((response) => {
-          console.log(response);
-          
+          debug("fetchAlbumByName() response", response)
           if (response.status === 200) {
-            this.albums.value[artist] = [...this.albums.value[artist], ...response.body];
-            console.log(response.body);
-            
+            if (this.albums.value[artist]) this.albums.value[artist] = [...this.albums.value[artist], ...response.body];
+            else this.albums.value[artist] = response.body;
             this.albums.next(this.albums.value);
           } else {
             console.log("Request failed with status:", response.status);
@@ -146,10 +143,11 @@ export class AlbumService {
           return of("Error occurred:", error);
         }),
         map((response) => {
-          console.log(response);
+          debug("fetchAlbumsByArtistName() response", response)
           
           if (response.status === 200) {
             this.albums.value[artistName] = response.body;
+            console.log("NEXT!", artistName, "updated!");
             this.albums.next(this.albums.value);
           } else {
             console.log("Request failed with status:", response.status);
@@ -157,38 +155,5 @@ export class AlbumService {
         })
       );
   }
-  /* getArtistsByCategory(range: any, forceReload = false): Observable<any> {
-    if (!this.topArtists.value || forceReload) {
-      this.getArtistScrobbles(range).subscribe();
-    }
-    console.log(this.topArtists.value);
-    
-    return this.topArtists.asObservable();
-  }
 
-  getArtistScrobbles(range: any): any {
-    return this.http
-      .get<Scrobble[]>(`${SERVER_API_URL}/scrobbles/artist`, {
-        params: {
-          range: String(range)
-        },
-        observe: 'response',
-      })
-      .pipe(
-        catchError((error) => {
-          return of('Error occurred:', error);
-        }),
-        map((response) => {
-          console.log(response);
-          
-          if (response.status === 200) {
-            return response.body;
-          } else {
-            console.log('Request failed with status:', response.status);
-          }
-        }),
-        tap((response) => {this.topArtists.next(response); console.log(response);
-        })
-      );
-  } */
 }

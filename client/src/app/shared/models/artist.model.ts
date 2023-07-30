@@ -9,6 +9,7 @@ export interface IArtist {
     id?: number;
     other_names?: string[];
     discography?: Album[];
+    scrobbles?: number;
 }
 
 export class Artist implements IArtist {
@@ -18,6 +19,7 @@ export class Artist implements IArtist {
         public genre?: Genre[],
         public id?: number,
         public other_names?: string[],
-        public discography?: Album[]
+        public discography?: Album[],
+        public scrobbles?: number
     ) {}
 }

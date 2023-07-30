@@ -11,6 +11,7 @@ import { TopAlbumsComponent } from "./home/top/top-albums.component";
 import { TopTracksComponent } from "./home/top/top-tracks.component";
 import { AlbumComponent } from './album/album.component';
 import { ArtistComponent } from './artist/artist.component';
+import { CategoryComponent } from './category/category.component';
 
 const routes: Routes = [
   {
@@ -28,6 +29,10 @@ const routes: Routes = [
       {
         path: "artist/:artist",
         component: ArtistComponent
+      },
+      {
+        path: "category/:category",
+        component: CategoryComponent
       }
     ],
   },
@@ -42,7 +47,8 @@ const routes: Routes = [
     TopAlbumsComponent,
     TopTracksComponent,
     AlbumComponent,
-    ArtistComponent
+    ArtistComponent,
+    CategoryComponent
   ],
   imports: [CommonModule, RouterModule.forChild(routes), SharedModule],
 })
