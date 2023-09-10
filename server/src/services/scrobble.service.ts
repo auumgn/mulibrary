@@ -42,10 +42,12 @@ export class ScrobbleService {
     return res.rows;
   }
 
-  async getAlbumScrobbles(id:number, range: number): Promise<Scrobble[]> {
+  async getAlbumScrobblesPerYear(album:string, artist: string): Promise<Scrobble[]> {
+    console.log(album, artist);
+    
     const query = {
-      text: 'select album, count(album) as playcount, artist, category from "mulibrary"."scrobbles" where timestamp > $1 group by album, artist, category order by count(album) desc limit 10',
-      values: [range],
+      text: `WITH year_series AS ( SELECT generate_series(2009, EXTRACT(YEAR FROM CURRENT_TIMESTAMP)) AS year ) SELECT year_series.year AS year, COALESCE(scrobbles.count, 0) AS scrobbles FROM year_series LEFT JOIN ( SELECT EXTRACT(YEAR FROM TO_TIMESTAMP(timestamp::bigint)) AS year, COUNT(*) AS count FROM "mulibrary"."scrobbles" WHERE album_id = ( SELECT id FROM "mulibrary"."album" WHERE $1 = "mulibrary"."normalize_name"(name) AND $2 = "mulibrary"."normalize_name"(array_to_string(artist, '-')) ) GROUP BY year ) AS scrobbles ON year_series.year = scrobbles.year ORDER BY year_series.year;`,
+      values: [album, artist],
     };
     const res = await this.conn.query(query);
     return res.rows;
@@ -53,7 +55,7 @@ export class ScrobbleService {
 
   async getTopTracks(range: number): Promise<Scrobble[]> {
     const query = {
-      text: 'select name, count(name) as playcount, artist, category from "mulibrary"."scrobbles" where timestamp > $1 group by name, artist, category order by count(name) desc limit 10',
+      text: 'select name, count(name) as playcount, artist, category, album from "mulibrary"."scrobbles" where timestamp > $1 group by name, artist, album, category order by count(name) desc limit 10',
       values: [range],
     };
     const res = await this.conn.query(query);

@@ -1,16 +1,25 @@
 import { Injectable } from "@angular/core";
-import { BehaviorSubject, Observable, catchError, map, of, tap } from "rxjs";
+import { BehaviorSubject, EMPTY, Observable, catchError, filter, map, of, tap } from "rxjs";
 import { HttpClient } from "@angular/common/http";
 import { SERVER_API_URL } from "src/app/app.constants";
 import { ICategoryScrobbles, Scrobble as IScrobble } from "src/app/shared/models/scrobble.model";
-
-
+import { Album } from "src/app/shared/models/album.model";
 
 @Injectable({ providedIn: "root" })
 export class ScrobbleService {
   private topArtists: { [period: number]: BehaviorSubject<IScrobble[]> } = {};
   private topAlbums: { [period: number]: BehaviorSubject<IScrobble[]> } = {};
   private topTracks: { [period: number]: BehaviorSubject<IScrobble[]> } = {};
+  private scrobblesPerYear: BehaviorSubject<{
+    [artist: string]: {
+      scrobbles?: { [year: string]: number };
+      albums: {
+        [album: string]: {
+          scrobbles: { [year: string]: number };
+        };
+      };
+    };
+  }> = new BehaviorSubject({});
   private recentScrobbles: BehaviorSubject<IScrobble[] | null> = new BehaviorSubject<IScrobble[] | null>(null);
   private categoryScrobbles: BehaviorSubject<ICategoryScrobbles | null> =
     new BehaviorSubject<ICategoryScrobbles | null>(null);
@@ -18,7 +27,6 @@ export class ScrobbleService {
   constructor(private http: HttpClient) {}
 
   getTopArtists(period: any, forceReload = false): Observable<any> {
-    
     if (!this.topArtists[period] || forceReload) {
       this.topArtists[period] = new BehaviorSubject<IScrobble[]>([]);
       this.fetchTopArtists(period).subscribe();
@@ -28,7 +36,7 @@ export class ScrobbleService {
 
   private fetchTopArtists(period: any): any {
     return this.http
-      .get<IScrobble[]>(`${SERVER_API_URL}/scrobbles/artists`, {
+      .get<IScrobble[]>(`${SERVER_API_URL}/scrobbles/top-artists`, {
         params: {
           range: String(period),
         },
@@ -61,7 +69,7 @@ export class ScrobbleService {
 
   private fetchTopAlbums(period: any): any {
     return this.http
-      .get<IScrobble[]>(`${SERVER_API_URL}/scrobbles/albums`, {
+      .get<IScrobble[]>(`${SERVER_API_URL}/scrobbles/top-albums`, {
         params: {
           range: String(period),
         },
@@ -94,7 +102,7 @@ export class ScrobbleService {
 
   private fetchTopTracks(period: any): any {
     return this.http
-      .get<IScrobble[]>(`${SERVER_API_URL}/scrobbles/tracks`, {
+      .get<IScrobble[]>(`${SERVER_API_URL}/scrobbles/top-tracks`, {
         params: {
           range: String(period),
         },
@@ -172,6 +180,58 @@ export class ScrobbleService {
           }
         }),
         tap((response) => this.recentScrobbles.next(response))
+      );
+  }
+
+  getAlbumScrobblesPerYear(album: string, artist: string, forceReload = false): Observable<any> {
+    if (!this.scrobblesPerYear.value[artist] || !this.scrobblesPerYear.value[artist].albums[album] || forceReload) {
+      this.fetchAlbumScrobblesPerYear(album, artist).subscribe();
+    }
+    
+    return this.scrobblesPerYear.pipe(
+      map((scrobbles) => {
+        
+        if (scrobbles[artist] && scrobbles[artist].albums && scrobbles[artist].albums[album].scrobbles) {
+          return scrobbles[artist].albums[album].scrobbles;
+        } else {
+          
+          return EMPTY;
+        }
+      })
+    );
+  }
+
+  private fetchAlbumScrobblesPerYear(album: string, artist: string): any {
+    console.log('roar');
+    
+    return this.http
+      .get<IScrobble[]>(`${SERVER_API_URL}/scrobbles/album`, {
+        params: {
+          album,
+          artist,
+        },
+        observe: "response",
+      })
+      .pipe(
+        catchError((error) => {
+          return of("Error occurred:", error);
+        }),
+        map((response) => {
+          if (response.status === 200) {
+            const scrobbles: { [year: string]: number } = {};
+            response.body.forEach((entry: any) => (scrobbles[entry.year] = entry.scrobbles));
+            // if there's no artist in the behaviorsubject
+            if (!this.scrobblesPerYear.value[artist]) {
+              this.scrobblesPerYear.value[artist] = { albums: { [album]: { scrobbles } } };
+            // if there's no album in the behaviorsubject
+            } else if (!this.scrobblesPerYear.value[artist].albums[album]) {
+              this.scrobblesPerYear.value[artist].albums[album] = { scrobbles };
+            }
+            this.scrobblesPerYear.next(this.scrobblesPerYear.value);
+          } else {
+            console.error("Request failed with status:", response.status);
+          }
+        })
       );
   }
 }

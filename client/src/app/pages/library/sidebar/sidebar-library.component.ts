@@ -58,6 +58,7 @@ export class SidebarLibraryComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
+    
     // TODO: remove the extra "getCategories" call
     //this.router.events.subscribe((sub) => console.log(sub, "sdflkjshdf"))
     this.treeviewService.activeNode$
@@ -81,6 +82,8 @@ export class SidebarLibraryComponent implements OnInit {
             const album = node!.data as Album;
             this.routeArtist = normalizeName(album.artist!.join("-"));
             this.routeAlbum = normalizeName(node!.name);
+            console.log('hehe');
+            
             return this.loadAlbumPageFromUrl();
           }
           return EMPTY;
@@ -90,6 +93,8 @@ export class SidebarLibraryComponent implements OnInit {
 
     if (!this.routePath) {
       this.categoryService.getCategories(true).subscribe((categories: Category[]) => {
+        console.log('test');
+        
         categories.map((category) => {
           this.data[category.name] = { name: category.name, type: "category", data: category, level: 0, children: {} };
         });
