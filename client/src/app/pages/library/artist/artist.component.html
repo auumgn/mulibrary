@@ -1,4 +1,4 @@
-<ng-container *ngIf="artist !== undefined">
+@if (artist !== undefined) {
   <div class="flex mb-14">
     <!-- Title and metadata -->
     <div class="flex-1">
@@ -8,34 +8,36 @@
   <h3 class="mb-10">Albums</h3>
   <!-- ALBUMS -->
   <ul>
-    <li *ngFor="let album of albums; index as i">
-      <div class="flex mb-4">
-        <div class="text-sm mr-10 h-[50px] w-[50px] hover:cursor-pointer" (click)="navigateToAlbumPage(album)">
-          <img
-            [src]="album.artwork && album.artwork.length > 0 && album.artwork[0]"
-            alt="Album cover image"
-            (error)="setPlaceholderAlbumCover()"
-          />
-        </div>
-        <div class="flex items-center flex-1">
-          <div class="w-2/3 hover:cursor-pointer" (click)="navigateToAlbumPage(album)">
-            <h2 class="text-base text-neutral-200">{{ album.name }}</h2>
-            <div class="text-sm text-neutral-400">{{ album.year }}</div>
+    @for (album of albums; track album; let i = $index) {
+      <li>
+        <div class="flex mb-4">
+          <div class="text-sm mr-10 h-[50px] w-[50px] hover:cursor-pointer" (click)="navigateToAlbumPage(album)">
+            <img
+              [src]="album.artwork && album.artwork.length > 0 && album.artwork[0]"
+              alt="Album cover image"
+              (error)="setPlaceholderAlbumCover()"
+              />
           </div>
-          <div class="w-1/6 text-sm">
-            {{ album.duration | formatDuration }}
-          </div>
-          <div class="w-1/3 flex items-center">
-            <div class="w-5/6">
-              <div
-                class="bar bg-teal-900 h-3 mt-[1px]"
-                [style.width.%]="calculateBarWidth(albums, album.scrobbles)"
-              ></div>
+          <div class="flex items-center flex-1">
+            <div class="w-2/3 hover:cursor-pointer" (click)="navigateToAlbumPage(album)">
+              <h2 class="text-base text-neutral-200">{{ album.name }}</h2>
+              <div class="text-sm text-neutral-400">{{ album.year }}</div>
             </div>
-            <div class="text-sm text-right w-1/6">{{ album.scrobbles }}</div>
+            <div class="w-1/6 text-sm">
+              {{ album.duration | formatDuration }}
+            </div>
+            <div class="w-1/3 flex items-center">
+              <div class="w-5/6">
+                <div
+                  class="bar bg-teal-900 h-3 mt-[1px]"
+                  [style.width.%]="calculateBarWidth(albums, album.scrobbles)"
+                ></div>
+              </div>
+              <div class="text-sm text-right w-1/6">{{ album.scrobbles }}</div>
+            </div>
           </div>
         </div>
-      </div>
-    </li>
+      </li>
+    }
   </ul>
-</ng-container>
+}

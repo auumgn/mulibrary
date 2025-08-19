@@ -7,17 +7,18 @@
     <div class="text-xs w-1/12 text-right">Time</div>
   </div>
   <ul>
-    <li *ngFor="let scrobble of recentScrobbles; index as i" >
-      <div class="flex items-center h-10">
-        <div class="text-sm flex-grow">{{ scrobble.artist }}</div>
-        <div class="text-sm w-1/3">{{ scrobble.name }}</div>
-        <div class="text-sm w-1/3">{{ scrobble.album ? scrobble.album : "-" }}</div>
-
-        <div class="text-xs w-1/12 text-right">
-          {{ scrobble.timestamp | timestampToDate }}
+    @for (scrobble of recentScrobbles; track scrobble; let i = $index) {
+      <li >
+        <div class="flex items-center h-10">
+          <div class="text-sm flex-grow">{{ scrobble.artist }}</div>
+          <div class="text-sm w-1/3">{{ scrobble.name }}</div>
+          <div class="text-sm w-1/3">{{ scrobble.album ? scrobble.album : "-" }}</div>
+          <div class="text-xs w-1/12 text-right">
+            {{ scrobble.timestamp | timestampToDate }}
+          </div>
         </div>
-      </div>
-    </li>
+      </li>
+    }
   </ul>
 </div>
 
