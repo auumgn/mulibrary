@@ -64,10 +64,10 @@
           "builder": "@angular-devkit/build-angular:dev-server",
           "configurations": {
             "production": {
-              "browserTarget": "mulibrary-client:build:production"
+              "buildTarget": "mulibrary-client:build:production"
             },
             "development": {
-              "browserTarget": "mulibrary-client:build:development"
+              "buildTarget": "mulibrary-client:build:development"
             }
           },
           "defaultConfiguration": "development"
@@ -75,7 +75,7 @@
         "extract-i18n": {
           "builder": "@angular-devkit/build-angular:extract-i18n",
           "options": {
-            "browserTarget": "mulibrary-client:build"
+            "buildTarget": "mulibrary-client:build"
           }
         },
         "test": {
