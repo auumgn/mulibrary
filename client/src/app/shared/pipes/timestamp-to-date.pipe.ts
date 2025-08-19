@@ -1,7 +1,8 @@
 import { Pipe, PipeTransform } from '@angular/core';
 
 @Pipe({
-  name: 'timestampToDate'
+    name: 'timestampToDate',
+    standalone: false
 })
 export class TimestampToDatePipe implements PipeTransform {
   transform(timestamp: number | undefined): string {

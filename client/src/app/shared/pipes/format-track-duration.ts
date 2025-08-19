@@ -1,7 +1,8 @@
 import { Pipe, PipeTransform } from "@angular/core";
 
 @Pipe({
-  name: "formatDuration",
+    name: "formatDuration",
+    standalone: false
 })
 export class FormatDuration implements PipeTransform {
   transform(timestamp: number | undefined): string {

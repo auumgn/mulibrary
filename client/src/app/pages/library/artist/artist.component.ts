@@ -13,9 +13,10 @@ import { FlatNode } from "../sidebar/sidebar-library.component";
 import { TreeviewService } from "src/app/core/services/treeview-service";
 
 @Component({
-  selector: "app-artist",
-  templateUrl: "./artist.component.html",
-  styleUrls: ["./artist.component.css"],
+    selector: "app-artist",
+    templateUrl: "./artist.component.html",
+    styleUrls: ["./artist.component.css"],
+    standalone: false
 })
 export class ArtistComponent implements OnInit, OnDestroy {
   constructor(

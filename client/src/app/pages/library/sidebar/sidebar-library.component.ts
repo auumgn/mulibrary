@@ -35,9 +35,10 @@ export class FlatNode {
 }
 
 @Component({
-  selector: "app-sidebar-library",
-  templateUrl: "sidebar-library.component.html",
-  styleUrls: ["sidebar-library.component.css"],
+    selector: "app-sidebar-library",
+    templateUrl: "sidebar-library.component.html",
+    styleUrls: ["sidebar-library.component.css"],
+    standalone: false
 })
 export class SidebarLibraryComponent implements OnInit {
   data: Data = {};

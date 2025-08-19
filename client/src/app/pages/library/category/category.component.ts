@@ -10,9 +10,10 @@ import { Artist } from "src/app/shared/models/artist.model";
 import { normalizeName } from "src/app/shared/utils/normalize-name.util";
 
 @Component({
-  selector: "app-category",
-  templateUrl: "./category.component.html",
-  styleUrls: ["./category.component.css"],
+    selector: "app-category",
+    templateUrl: "./category.component.html",
+    styleUrls: ["./category.component.css"],
+    standalone: false
 })
 export class CategoryComponent implements OnInit {
   constructor(

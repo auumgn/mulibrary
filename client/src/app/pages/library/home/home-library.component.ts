@@ -6,9 +6,10 @@ import { CategoryScale, Chart, Filler, LineController, LineElement, LinearScale,
 import { calculateBarWidth } from "src/app/shared/utils/calculate-bar-width";
 
 @Component({
-  selector: "app-home-library",
-  templateUrl: "./home-library.component.html",
-  styleUrls: ["./home-library.component.css"],
+    selector: "app-home-library",
+    templateUrl: "./home-library.component.html",
+    styleUrls: ["./home-library.component.css"],
+    standalone: false
 })
 export class HomeLibraryComponent implements OnInit {
   chart: any;

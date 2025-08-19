@@ -26,9 +26,10 @@ import { getCurrentYear } from "src/app/shared/utils/date.util";
 
 
 @Component({
-  selector: "app-album",
-  templateUrl: "./album.component.html",
-  styleUrls: ["./album.component.css"],
+    selector: "app-album",
+    templateUrl: "./album.component.html",
+    styleUrls: ["./album.component.css"],
+    standalone: false
 })
 export class AlbumComponent implements OnInit, OnDestroy {
   constructor(
