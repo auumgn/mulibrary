@@ -7,7 +7,6 @@ import { HttpClient, HttpHeaders } from '@angular/common/http';
   styleUrls: ['./main-library.component.css']
 })
 export class MainLibraryComponent {
-  zhopen!: string;
   httpOptions = {
     headers: new HttpHeaders({
       'Content-Type':  'text/plain',
