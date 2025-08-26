@@ -21,15 +21,13 @@ import { Track } from "src/app/shared/models/track.model";
 import { calculateBarWidth } from "src/app/shared/utils/calculate-bar-width";
 import { FlatNode } from "../sidebar/sidebar-library.component";
 import { ScrobbleService } from "src/app/core/services/scrobble.service";
-import { BarController, BarElement, CategoryScale, Chart, LinearScale } from "chart.js";
 import { getCurrentYear } from "src/app/shared/utils/date.util";
 
-
 @Component({
-    selector: "app-album",
-    templateUrl: "./album.component.html",
-    styleUrls: ["./album.component.css"],
-    standalone: false
+  selector: "app-album",
+  templateUrl: "./album.component.html",
+  styleUrls: ["./album.component.css"],
+  standalone: false,
 })
 export class AlbumComponent implements OnInit, OnDestroy {
   constructor(
@@ -52,7 +50,7 @@ export class AlbumComponent implements OnInit, OnDestroy {
   cover = "";
 
   ngOnInit(): void {
-    Chart.register(BarController, BarElement, LinearScale, CategoryScale);
+    //Chart.register(BarController, BarElement, LinearScale, CategoryScale);
 
     this.activatedRoute.params
       .pipe(
@@ -71,8 +69,6 @@ export class AlbumComponent implements OnInit, OnDestroy {
         })
       )
       .subscribe(([album, tracks, scrobbles]) => {
-        console.log("hm no");
-
         this.length = 0;
         this.trackPlays = 0;
         this.album = album;
@@ -80,7 +76,7 @@ export class AlbumComponent implements OnInit, OnDestroy {
           year: Number(year),
           value: value as number,
         }));
-        this.createChart();
+        //  this.createChart();
 
         if (album) this.treeviewService.updateActiveNode(new FlatNode(album.name, 2, album, false, false, true));
         if (this.album && this.album.artwork && this.album.artwork.length > 0)
@@ -96,7 +92,7 @@ export class AlbumComponent implements OnInit, OnDestroy {
 
   setPlaceholderAlbumCover() {}
 
-  createChart() {
+  /*   createChart() {
     if (this.scrobblesByYear.length > 0) {
       const labels = this.scrobblesByYear.map((scrobbles) => scrobbles.year);
       const data = this.scrobblesByYear.map(scrobbles => +scrobbles.value);
@@ -132,7 +128,7 @@ export class AlbumComponent implements OnInit, OnDestroy {
         },
       });
     }
-  }
+  } */
 
   ngOnDestroy(): void {
     this.destroy$.next(true);

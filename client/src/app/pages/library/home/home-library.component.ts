@@ -19,17 +19,13 @@ export class HomeLibraryComponent implements OnInit {
   topAlbums: { [period: number]: IScrobble[] } = {};
   topTracks: { [period: number]: IScrobble[] } = {};
 
-  constructor(private scrobbleService: ScrobbleService, private chartService: ChartService) {}
+  constructor(private scrobbleService: ScrobbleService) {}
   // should you have a multiuse model e.g. scrobble or have smaller ones like ArtistScrobble TrackScrobble etc
   ngOnInit(): void {
     // add unsubscribe
     this.scrobbleService
       .getRecentTracks(1, 10)
       .subscribe((scrobbles: IScrobble[] | null) => (this.recentScrobbles = scrobbles));
-    this.chartService.getCategoryPercentages().subscribe((chart) => {
-      console.log(chart);
-      this.chart = chart;
-    });
 
     this.periods.forEach((period) => {
       this.scrobbleService.getTopArtists(getTimestampMonthsAgo(period)).subscribe((artists: IScrobble[]) => {

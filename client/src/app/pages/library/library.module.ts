@@ -9,9 +9,12 @@ import { SharedModule } from "src/app/shared/shared.module";
 import { TopArtistsComponent } from "./home/top/top-artists.component";
 import { TopAlbumsComponent } from "./home/top/top-albums.component";
 import { TopTracksComponent } from "./home/top/top-tracks.component";
-import { AlbumComponent } from './album/album.component';
-import { ArtistComponent } from './artist/artist.component';
-import { CategoryComponent } from './category/category.component';
+import { AlbumComponent } from "./album/album.component";
+import { ArtistComponent } from "./artist/artist.component";
+import { CategoryComponent } from "./category/category.component";
+import { CategoryChartComponent } from "./chart/category-chart/category-chart.component";
+import { RecentRatingsComponent } from "./home/recent/recent-ratings/recent-ratings.component";
+import { BacklogComponent } from './home/backlog/backlog.component';
 
 const routes: Routes = [
   {
@@ -24,16 +27,16 @@ const routes: Routes = [
       },
       {
         path: "album/:artist/:album",
-        component: AlbumComponent
+        component: AlbumComponent,
       },
       {
         path: "artist/:artist",
-        component: ArtistComponent
+        component: ArtistComponent,
       },
       {
         path: "category/:category",
-        component: CategoryComponent
-      }
+        component: CategoryComponent,
+      },
     ],
   },
 ];
@@ -46,10 +49,12 @@ const routes: Routes = [
     TopArtistsComponent,
     TopAlbumsComponent,
     TopTracksComponent,
+    RecentRatingsComponent,
     AlbumComponent,
     ArtistComponent,
-    CategoryComponent
+    CategoryComponent,
+    BacklogComponent,
   ],
-  imports: [CommonModule, RouterModule.forChild(routes), SharedModule],
+  imports: [CommonModule, RouterModule.forChild(routes), SharedModule, CategoryChartComponent],
 })
 export class LibraryModule {}

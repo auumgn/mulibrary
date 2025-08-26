@@ -20,7 +20,8 @@
     "@angular/platform-browser-dynamic": "^20.1.7",
     "@angular/router": "^20.1.7",
     "@supabase/supabase-js": "^2.55.0",
-    "chart.js": "^4.3.0",
+    "d3": "^7.9.0",
+    "range-slider-input": "^2.4.4",
     "rxjs": "~7.5.0",
     "tslib": "^2.3.0",
     "zone.js": "~0.15.1"
@@ -29,6 +30,7 @@
     "@angular/build": "^20.1.6",
     "@angular/cli": "~20.1.6",
     "@angular/compiler-cli": "^20.1.7",
+    "@types/d3": "^7.4.3",
     "@types/jasmine": "~4.0.0",
     "autoprefixer": "^10.4.14",
     "jasmine-core": "~4.1.0",

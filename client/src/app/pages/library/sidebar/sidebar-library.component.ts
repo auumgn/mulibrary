@@ -83,8 +83,6 @@ export class SidebarLibraryComponent implements OnInit {
             const album = node!.data as Album;
             this.routeArtist = normalizeName(album.artist!.join("-"));
             this.routeAlbum = normalizeName(node!.name);
-            console.log('hehe');
-            
             return this.loadAlbumPageFromUrl();
           }
           return EMPTY;
