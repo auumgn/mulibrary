@@ -48,7 +48,9 @@ export class MainLibraryComponent implements OnInit {
       this.data = data;
       this.points = data?.length;
     });
+  }
 
+  ngAfterViewInit() {
     const slider = document.querySelector("#range-slider");
     if (slider) {
       rangeSlider(slider, {
