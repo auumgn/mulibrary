@@ -1,0 +1,26 @@
+<h1 class="text-xl font-semibold mb-3">Top categories</h1>
+
+<div class="flex text-stone-400 mb-2">
+  <!--  <div class="mr-2 min-w-[20px] text-xs text-center">#</div> -->
+  <div class="w-1/2 text-xs pr-4">Artist</div>
+  <!--   <div class="w-[30%] text-xs">Category</div> -->
+  <div class="text-xs w-1/2">Plays</div>
+</div>
+<ul>
+  @for (category of categories; track $index; let i = $index) {
+  <li class="flex items-center h-6">
+    <!--  <div class="mr-2 min-w-[20px] text-sm text-stone-400 text-center">{{ i + 1 }}</div> -->
+    <div class="text-sm w-1/2 overflow-hidden text-ellipsis whitespace-nowrap pr-8">
+      {{ category.category }}
+    </div>
+    <!--  <div class="text-sm w-[30%]">{{ artist.category ? artist.category : "-" }}</div> -->
+    <div class="w-1/2 flex items-center">
+      <div class="text-sm min-w-[40px] text-left">{{ category.playcount }}</div>
+      <div
+        class="bar bg-teal-900 h-3 mt-[1px]"
+        [style.width.%]="calculateBarWidth(categories, category.playcount)"
+      ></div>
+    </div>
+  </li>
+  }
+</ul>

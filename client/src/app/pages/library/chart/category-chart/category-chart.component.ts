@@ -9,46 +9,46 @@ import { ICategoryScrobbles } from "src/app/shared/models/scrobble.model";
   styleUrls: ["./category-chart.component.css"],
 })
 export class CategoryChartComponent implements OnInit {
-  colors = [
-    "#64748b",
-    "#94a3b8",
-    "#cbd5e1",
-    "#10b981",
-    "#34d399",
-    "#6ee7b7",
-    "#22d3ee",
-    "#67e8f9",
-    "#1a2e05",
-    "#a5f3fc",
-    "#0ea5e9",
-    "#93c5fd",
-    "#a78bfa",
-    "#c4b5fd",
-    "#ddd6fe",
-    "#ec4899",
-    "#f472b6",
-    "#f9a8d4",
-    "#fb7185",
-    "#fda4af",
-    "#f97316",
-    "#fb923c",
-    "#fdba74",
-    "#fbbf24",
-    "#fcd34d",
-    "#fde68a",
-    "#facc15",
-    "#fde047",
-    "#fef08a",
-    "#a3e635",
-    "#d9f99d",
-  ];
+  colors = {
+    Metal: "#1a1a1a",
+    "Post-rock": "#94a3b8",
+    Pre: "#5b9bae",
+    "Minimal Wave": "#cbd5e1",
+    Post: "#01719d",
+    Industrial: "#0f4b6f",
+    Free: "#6ee7b7",
+    Folk: "#34d399",
+    Ambient: "#22d3ee",
+    EBM: "#860926",
+    Drone: "#0ea5e9",
+    Rock: "#93c5fd",
+    Shugazi: "#10b981",
+    Classical: "#a78bfa",
+    "Hardcore & Crossover": "#c4b5fd",
+    "Neo-psychedelia": "#67e8f9",
+    Electronic: "#ddd6fe",
+    Alt: "#ec4899",
+    Now: "#f472b6",
+    Singles: "#f9a8d4",
+    "City Pop": "#fb7185",
+    Kraut: "#ffc498",
+    Jazz: "#a2512a",
+    Emo: "#fb923c",
+    "Noise & Power Electronics": "#fdba74",
+    "Singer-Songwriter": "#fbbf24",
+    "Hip-Hop": "#fcd34d",
+    Powerviolence: "#facc15",
+    Pop: "#fde68a",
+    Psych: "#fde047",
+    "Noise Rock": "#fef08a",
+  };
+
   @ViewChild("chart", { static: true }) chartContainer!: ElementRef;
   categories: ICategoryScrobbles | undefined;
 
-  // Wiggle controls
   wiggleEnabled = false;
-  wiggleDepth = 0.05; // ±5%
-  wiggleSpeed = 2000; // ms divisor
+  wiggleDepth = 0.05;
+  wiggleSpeed = 2000;
 
   private svg: any;
   private x: any;
@@ -92,11 +92,12 @@ export class CategoryChartComponent implements OnInit {
       });
       return entry;
     });
+    const colorOrder = Object.keys(this.colors);
+    this.keys = Object.keys(categories).sort((a, b) => colorOrder.indexOf(a) - colorOrder.indexOf(b));
 
-    this.keys = Object.keys(categories);
-    this.color = d3.scaleOrdinal<string>().domain(this.keys).range(this.colors);
+    this.stackData = this.downsampleData(this.stackData, 6, 12); // every 3rd month
+    /*     this.color = d3.scaleOrdinal<string>().domain(this.keys).range(this.colors); */
     this.stack = d3.stack().keys(this.keys).offset(d3.stackOffsetWiggle);
-
     this.phases = {};
     this.keys.forEach((k) => (this.phases[k] = Math.random() * Math.PI * 2));
   }
@@ -112,7 +113,8 @@ export class CategoryChartComponent implements OnInit {
       .append("svg")
       .attr("width", "100%")
       .attr("height", this.height + this.margin.top + this.margin.bottom)
-      .append("g");
+      .append("g")
+      .attr("transform", `translate(${this.margin.left},${this.margin.top})`);
 
     this.x = d3
       .scaleTime()
@@ -127,7 +129,6 @@ export class CategoryChartComponent implements OnInit {
       .y1((d) => this.y(d[1]))
       .curve(d3.curveBasis);
 
-    // Tooltip
     const tooltip = d3
       .select(this.chartContainer.nativeElement)
       .append("div")
@@ -145,6 +146,7 @@ export class CategoryChartComponent implements OnInit {
       d3.max(series, (s: any) => d3.max(s, (d: any) => d[1])),
     ]);
 
+    // Draw areas
     this.svg
       .selectAll("path.area")
       .data(series)
@@ -152,7 +154,10 @@ export class CategoryChartComponent implements OnInit {
       .append("path")
       .attr("class", "area")
       .attr("d", this.area)
-      .attr("fill", (d: any) => this.color(d.key) as string)
+      .attr("fill", (d: any) => this.colors[d.key as keyof typeof this.colors])
+      .style("stroke", "#fff") // black stroke for edges
+      .style("stroke-width", 0.3)
+      .style("stroke-linejoin", "round")
       .style("opacity", 1)
       .on("mouseover", (event: MouseEvent, d: any) => {
         this.svg.selectAll(".area").style("opacity", 0.25);
@@ -160,7 +165,6 @@ export class CategoryChartComponent implements OnInit {
         tooltip.style("display", "block");
       })
       .on("mousemove", (event: MouseEvent, d: any) => {
-        // pointer relative to the chart group so x.invert works reliably
         const [mx] = d3.pointer(event, this.svg.node());
         const date = this.x.invert(mx);
         tooltip
@@ -172,13 +176,24 @@ export class CategoryChartComponent implements OnInit {
         tooltip.style("display", "none");
         this.svg.selectAll(".area").style("opacity", 1);
       });
+  }
 
-    // X AXIS
-    /*     this.svg
-      .append("g")
-      .attr("class", "x-axis")
-      .attr("transform", `translate(0,${this.height})`)
-      .call(d3.axisBottom(this.x).ticks(d3.timeYear.every(1))); */
+  private downsampleData(data: any[], step = 3, minPoints = 12) {
+    if (data.length <= minPoints) return data;
+
+    const result = data.filter((_row, i) => i % step === 0);
+
+    // Ensure first element is included
+    if (result[0].date.getTime() !== data[0].date.getTime()) {
+      result.unshift(data[0]);
+    }
+
+    // Ensure last element is included
+    if (result[result.length - 1].date.getTime() !== data[data.length - 1].date.getTime()) {
+      result.push(data[data.length - 1]);
+    }
+
+    return result;
   }
 
   private updateChart() {
@@ -187,9 +202,7 @@ export class CategoryChartComponent implements OnInit {
       d3.min(series, (s: any) => d3.min(s, (d: any) => d[0])),
       d3.max(series, (s: any) => d3.max(s, (d: any) => d[1])),
     ]);
-
     this.svg.selectAll("path.area").data(series).attr("d", this.area);
-    this.svg.select(".x-axis").call(d3.axisBottom(this.x).ticks(d3.timeYear.every(1)));
   }
 
   private animate() {
@@ -212,13 +225,7 @@ export class CategoryChartComponent implements OnInit {
       d3.max(series, (s: any) => d3.max(s, (d: any) => d[1])),
     ]);
 
-    this.svg
-      .selectAll("path.area")
-      .data(series)
-      .transition()
-      .duration(this.wiggleSpeed)
-      .ease(d3.easeLinear)
-      .attr("d", this.area);
+    this.svg.selectAll("path.area").data(series).attr("d", this.area);
   }
 
   @HostListener("window:resize")

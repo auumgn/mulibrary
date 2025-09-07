@@ -43,7 +43,7 @@ export class MainLibraryComponent implements OnInit {
 
   ngOnInit(): void {
     this.windowWidth = window.innerWidth;
-    this.currentRange = [this.totalMonths - 24, this.totalMonths];
+    this.currentRange = [this.totalMonths - 36, this.totalMonths];
 
     this.scrobbleService.getTimelineSliderScrobbles().subscribe((data) => {
       this.data = data;
@@ -62,11 +62,9 @@ export class MainLibraryComponent implements OnInit {
           this.updateTooltipPositions(value);
         },
         onThumbDragEnd: () => {
-          console.log("Final range:", this.formatRange(this.currentRange));
           this.onSliderChange(this.currentRange);
         },
         onRangeDragEnd: () => {
-          console.log("Final range:", this.formatRange(this.currentRange));
           this.onSliderChange(this.currentRange);
         },
       });

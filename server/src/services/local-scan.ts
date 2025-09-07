@@ -5,10 +5,27 @@ import { Artist } from '../models/artist.model.js';
 import { Category } from '../models/category.model.js';
 import { Track } from '../models/track.model.js';
 import { Album } from '../models/album.model.js';
-import { createAlbum, createArtist, createTrack, deleteTracksAlbumsArtists, updateArtwork } from '../controllers/database-access.js';
+import {
+  createAlbum,
+  createArtist,
+  createTrack,
+  deleteTracksAlbumsArtists,
+  updateArtwork,
+} from '../controllers/database-access.js';
 
-const audioExtensions = ["aax", "aac", "aiff", "ape", "flac", "m4a", "mp3", "ogg", "wav", "wma"];
-const artworkExtensions = ["jpg", "png"];
+const audioExtensions = [
+  'aax',
+  'aac',
+  'aiff',
+  'ape',
+  'flac',
+  'm4a',
+  'mp3',
+  'ogg',
+  'wav',
+  'wma',
+];
+const artworkExtensions = ['jpg', 'png'];
 const skipFolders = ['Friends', 'Various'];
 const BASE_MUSIC_FOLDER = 'd:\\music';
 const TEMP_MUSIC_FOLDER = 'd:\\testmusik';
@@ -19,14 +36,17 @@ let duplicateAlbum = false;
 
 // add a new table to store the json of the music folder structure, if change is detected = scan those folders
 const scanLocalMachine = async function (dirPath: string) {
-  const files = fs.readdirSync(dirPath)
+  const files = fs.readdirSync(dirPath);
 
   for (var i = 0; i < files.length; i++) {
     const file = files[i];
     const fullPath = path.join(dirPath, file).toLowerCase();
-    const pathArray = (dirPath + '\\' + file).replace(BASE_MUSIC_FOLDER, '').split('\\').filter(p => p);
+    const pathArray = (dirPath + '\\' + file)
+      .replace(BASE_MUSIC_FOLDER, '')
+      .split('\\')
+      .filter((p) => p);
 
-    if (fs.statSync(dirPath + "\\" + file).isDirectory()) {
+    if (fs.statSync(dirPath + '\\' + file).isDirectory()) {
       if (pathArray.length === 1) {
         if (skipFolders.includes(pathArray[0])) continue;
         category = new Category(pathArray[0]);
@@ -43,19 +63,31 @@ const scanLocalMachine = async function (dirPath: string) {
       if (pathArray.length === 3) {
         album = undefined;
       }
-      await scanLocalMachine(dirPath + "\\" + file)
+      await scanLocalMachine(dirPath + '\\' + file);
     } else {
       // audiofiles
       if (audioExtensions.includes(fullPath.split(/\.(?=[^\.]+$)/)[1])) {
-        const metadata = await parseFile(fullPath); 
+        const metadata = await parseFile(fullPath);
         //if (!artist) artist = new Artist()
 
         // create album using track metadata
         if (!album) {
-          album = new Album(filterAlbumName(metadata.common.album) || filterAlbumName(pathArray[2]), [artist?.name] || null,  [artist?.id] || null, metadata.common.year, metadata.common.genre, null, null, null, null, category.name)
+          album = new Album(
+            filterAlbumName(metadata.common.album) ||
+              filterAlbumName(pathArray[2]),
+            [artist?.name],
+            [artist?.id],
+            metadata.common.year,
+            metadata.common.genre,
+            null,
+            null,
+            null,
+            null,
+            category.name,
+          );
           album.genre = metadata.common.genre;
           album.year = metadata.common.year;
-          
+
           const createAlbumResponse = await createAlbum(album);
           if (createAlbumResponse) {
             duplicateAlbum = false;
@@ -77,14 +109,20 @@ const scanLocalMachine = async function (dirPath: string) {
             metadata.common.track.no,
             category.name,
             metadata.common.year,
-            metadata.common.genre)
+            metadata.common.genre,
+          );
           album?.tracks.push(track.id);
           await createTrack(track);
         }
 
-      // artwork
-      } else if (artworkExtensions.includes(fullPath.split(/\.(?=[^\.]+$)/)[1])) {
-        const pathArray = (dirPath + '\\' + file).replace(dirPath, '').split('\\').filter(p => p);
+        // artwork
+      } else if (
+        artworkExtensions.includes(fullPath.split(/\.(?=[^\.]+$)/)[1])
+      ) {
+        const pathArray = (dirPath + '\\' + file)
+          .replace(dirPath, '')
+          .split('\\')
+          .filter((p) => p);
         // in case album artwork needs to be stored with a category/artist/album folder structure
         /* const dir = `./content/artwork/${pathArray[0]}/${pathArray[1]}/${pathArray[2]}`;
         if (!fs.existsSync(dir)){
@@ -97,29 +135,33 @@ const scanLocalMachine = async function (dirPath: string) {
             await updateArtwork(album);
           }
         } */
-        if (album?.id) {
+        /*  if (album?.id) {
           const dir = process.cwd() + `\\src\\content\\artwork\\`;
           const artworkFilename = album.id + '_' + file;
-          if (!album.artwork.find(art => art === artworkFilename)) {
+          if (!album.artwork.find((art) => art === artworkFilename)) {
             if (!fs.existsSync(dir + artworkFilename)) {
               fs.copyFileSync(dirPath + '\\' + file, dir + artworkFilename);
               album.artwork.push(artworkFilename);
               await updateArtwork(album);
             }
           }
-        }
+        } */
       }
     }
   }
-}
+};
 
-const filterAlbumName = (name: string) : string | null => {
+const filterAlbumName = (name: string): string | null => {
   if (name) {
-    return name.replace(/\[.*?\]/g, '').replace(/\(.*?\)/g, '').replace(/\s+/g, ' ').trim();
+    return name
+      .replace(/\[.*?\]/g, '')
+      .replace(/\(.*?\)/g, '')
+      .replace(/\s+/g, ' ')
+      .trim();
   } else {
     return null;
   }
-}
+};
 
 //await deleteTracksAlbumsArtists();
 scanLocalMachine(BASE_MUSIC_FOLDER);

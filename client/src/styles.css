@@ -6,9 +6,72 @@ html,
 body {
   height: 100%;
 }
+
+:root {
+  /* Background & Foreground */
+  --color-bg: 255 255 255; /* Light background */
+  --color-surface: 245 245 245; /* Slightly darker for cards */
+  --color-foreground: 15 23 42; /* Dark text */
+  --color-border: 203 213 225; /* Neutral border */
+
+  /* Primary (Teal) */
+  --color-primary: 19 78 74;
+  --color-primary-light: 45 135 130;
+  --color-primary-dark: 12 57 54;
+
+  /* Secondary (Indigo) */
+  --color-secondary: 79 70 229;
+  --color-secondary-light: 99 102 241;
+  --color-secondary-dark: 55 48 163;
+
+  /* Warning (Amber) */
+  --color-warning: 245 158 11;
+  --color-warning-light: 251 191 36;
+  --color-warning-dark: 180 83 9;
+
+  /* Info (Sky Blue) */
+  --color-info: 14 165 233;
+  --color-info-light: 56 189 248;
+  --color-info-dark: 3 105 161;
+}
+
+[data-theme="dark"] {
+  --color-bg: 23 23 23;
+  --color-surface: 38 38 38;
+  --color-foreground: 214 211 209;
+  --color-border: 64 64 64;
+
+  /* Keep accents but adjust contrast */
+  --color-primary: 45 135 130;
+  --color-primary-light: 64 163 158;
+  --color-primary-dark: 19 78 74;
+
+  --color-secondary: 129 140 248;
+  --color-secondary-light: 165 180 252;
+  --color-secondary-dark: 79 70 229;
+
+  --color-warning: 251 191 36;
+  --color-warning-light: 253 224 71;
+  --color-warning-dark: 202 138 4;
+
+  --color-info: 56 189 248;
+  --color-info-light: 125 211 252;
+  --color-info-dark: 14 165 233;
+}
+
 body {
   margin: 0;
-  font-family: 'Inter', 'Helvetica Neue', sans-serif;
- /*  background-color: #1e1e1e;     */
-  @apply text-stone-300;
+  font-family: "Inter", "Helvetica Neue", sans-serif;
+  @apply bg-background text-foreground;
 }
+
+/* a {
+  @apply text-accent;
+  filter: brightness(1.8);
+}
+
+a:hover {
+  @apply text-primary;
+  filter: brightness(2);
+}
+ */

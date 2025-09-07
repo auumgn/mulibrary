@@ -1,5 +1,5 @@
 import { Injectable } from "@angular/core";
-import { BehaviorSubject, Observable, catchError, filter, map, of, tap } from "rxjs";
+import { BehaviorSubject, Observable, catchError, filter, from, map, of, tap } from "rxjs";
 import { HttpClient } from "@angular/common/http";
 import { SERVER_API_URL } from "src/app/app.constants";
 import { Artist } from "src/app/shared/models/artist.model";
@@ -7,6 +7,7 @@ import { Scrobble } from "src/app/shared/models/scrobble.model";
 import { ITreenode } from "src/app/shared/models/treenode.model";
 import { normalizeName } from "src/app/shared/utils/normalize-name.util";
 import { debug } from "src/app/shared/utils/debug-util";
+import { SupabaseService } from "./supabase.service";
 
 @Injectable({ providedIn: "root" })
 export class ArtistService {
@@ -14,13 +15,13 @@ export class ArtistService {
   // TODO: this is huh what?    v
   artistNodes: BehaviorSubject<ITreenode[]> = new BehaviorSubject<ITreenode[]>([]);
 
-  constructor(private http: HttpClient) {}
+  constructor(private http: HttpClient, private supabaseService: SupabaseService) {}
 
   getArtists(forceReload = false): Observable<any> {
     if (this.artistNodes.value.length === 0 || forceReload) {
       this.fetchArtists().subscribe();
     }
-    return this.artistNodes.pipe(filter(artists => artists && artists.length > 0));
+    return this.artistNodes.pipe(filter((artists) => artists && artists.length > 0));
   }
 
   fetchArtists(): any {
@@ -51,35 +52,25 @@ export class ArtistService {
       this.fetchArtistByName(name).subscribe();
     }
     // TODO: add interceptor for various calls to see if anything is being returned incorrectly e.g. this function returns two artists when you should only have one
-    return this.artists.pipe(
-      map((artists) => artists.filter((artist) => normalizeName(artist.name) === name)[0]),
-    );
+    return this.artists.pipe(map((artists) => artists.filter((artist) => normalizeName(artist.name) === name)[0]));
   }
 
   fetchArtistByName(artist: string): any {
-    return this.http
-      .get<Artist>(`${SERVER_API_URL}/artist`, {
-        params: {
-          artist,
-        },
-        observe: "response",
+    return from(this.supabaseService.getArtistByName(artist)).pipe(
+      catchError((error) => {
+        return of(error);
+      }),
+      map((response) => {
+        if (response.status === 200) {
+          return response.data;
+        } else {
+          console.log("fetchArtistByName() Request failed:", response, "Error:", response.error);
+        }
+      }),
+      tap((response) => {
+        this.artists.next(Array.from(new Set([...this.artists.value, ...response])));
       })
-      .pipe(
-        catchError((error) => {
-          return of(error);
-        }),
-        map((response) => {
-          
-          if (response.status === 200) {
-            return response.body;
-          } else {
-            console.log("Request failed:", response);
-          }
-        }),
-        tap((response) => {
-          this.artists.next(Array.from(new Set([...this.artists.value, ...response])));
-        })
-      );
+    );
   }
 
   getArtistsByCategory(category: string, forceReload = false): Observable<Artist[]> {
@@ -91,8 +82,15 @@ export class ArtistService {
       this.fetchArtistsByCategory(category).subscribe();
     }
     return this.artists.pipe(
-      map((artists) => {return artists.filter((artist) => {return artist.category && normalizeName(artist.category) === category})}),
-      filter((artists) => { debug("Getting artists:", artists, "by category", category);  return artists.length > 0})
+      map((artists) => {
+        return artists.filter((artist) => {
+          return artist.category && normalizeName(artist.category) === category;
+        });
+      }),
+      filter((artists) => {
+        debug("Getting artists:", artists, "by category", category);
+        return artists.length > 0;
+      })
     );
   }
 

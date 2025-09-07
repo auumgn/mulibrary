@@ -1,6 +1,6 @@
 #range-slider {
   margin: auto;
-  height: 40px;
+  height: 50px;
   overflow: hidden;
   border-radius: 0;
   background: transparent;
@@ -9,20 +9,21 @@
 }
 
 ::ng-deep #range-slider .range-slider__thumb {
-  width: 10px;
-  height: 28px;
-  border-radius: 4px;
-  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='18' height='18' fill='%23333' viewBox='0 0 24 24'%3E%3Cpath d='M12,16A2,2 0 0,1 14,18A2,2 0 0,1 12,20A2,2 0 0,1 10,18A2,2 0 0,1 12,16M12,10A2,2 0 0,1 14,12A2,2 0 0,1 12,14A2,2 0 0,1 10,12A2,2 0 0,1 12,10M12,4A2,2 0 0,1 14,6A2,2 0 0,1 12,8A2,2 0 0,1 10,6A2,2 0 0,1 12,4Z' /%3E%3C/svg%3E")
-    #fff;
+  width: 2px;
+  border-radius: 2px;
+  height: 60px;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='4' height='18' fill='%23333' viewBox='0 0 24 24'%3E%3Cpath d='M12,16A2,2 0 0,1 14,18A2,2 0 0,1 12,20A2,2 0 0,1 10,18A2,2 0 0,1 12,16M12,10A2,2 0 0,1 14,12A2,2 0 0,1 12,14A2,2 0 0,1 10,12A2,2 0 0,1 12,10M12,4A2,2 0 0,1 14,6A2,2 0 0,1 12,8A2,2 0 0,1 10,6A2,2 0 0,1 12,4Z' /%3E%3C/svg%3E")
+    #ffffffc9;
   background-repeat: no-repeat;
   background-position: center;
+  overflow-y: visible;
 }
 
 ::ng-deep #range-slider .range-slider__range {
   border-radius: 4px;
-  background: transparent;
+  background: #cfcfcf17;
   box-sizing: border-box;
-  box-shadow: 0 0 0 9999px rgba(28, 28, 28, 0.75);
+  box-shadow: 0 0 0 9999px rgba(24, 24, 24, 0.8);
 }
 
 .tooltips {
@@ -30,4 +31,8 @@
 }
 #range-slider:hover + .tooltips {
   display: inline;
+}
+
+.sliderbg {
+  background-color: rgba(28, 28, 28, 1);
 }

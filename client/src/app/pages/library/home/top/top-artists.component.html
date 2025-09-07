@@ -1,7 +1,7 @@
-<h1 class="text-xl font-semibold mb-4">Top artists</h1>
+<h1 class="text-xl font-semibold mb-3">Top artists</h1>
 
 <div class="flex text-stone-400 mb-2">
-  <div class="mr-2 min-w-[20px] text-xs text-center">#</div>
+  <!--  <div class="mr-2 min-w-[20px] text-xs text-center">#</div> -->
   <div class="w-1/2 text-xs pr-4">Artist</div>
   <!--   <div class="w-[30%] text-xs">Category</div> -->
   <div class="text-xs w-1/2">Plays</div>
@@ -9,7 +9,7 @@
 <ul>
   @for (artist of artists; track $index; let i = $index) {
   <li class="flex items-center h-6">
-    <div class="mr-2 min-w-[20px] text-sm text-stone-400 text-center">{{ i + 1 }}</div>
+    <!--  <div class="mr-2 min-w-[20px] text-sm text-stone-400 text-center">{{ i + 1 }}</div> -->
     <div class="text-sm w-1/2 overflow-hidden text-ellipsis whitespace-nowrap pr-8">
       {{ artist.artist }}
     </div>

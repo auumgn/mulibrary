@@ -26,6 +26,17 @@ export class ScrobbleService {
   private timelineScrobbles: BehaviorSubject<any> = new BehaviorSubject<any>(undefined);
   private categoryScrobbles: BehaviorSubject<ICategoryScrobbles | null> =
     new BehaviorSubject<ICategoryScrobbles | null>(null);
+  private topCategoryScrobbles: BehaviorSubject<
+    {
+      category: string;
+      playcount: number;
+    }[]
+  > = new BehaviorSubject<
+    {
+      category: string;
+      playcount: number;
+    }[]
+  >([]);
   normalized = false;
 
   constructor(
@@ -35,59 +46,67 @@ export class ScrobbleService {
   ) {
     this.timeRangeService.sliderRange$.pipe(skip(1)).subscribe(() => {
       this.fetchCategoryScrobbles();
+      this.fetchTopArtists(3);
+      this.fetchTopAlbums(3);
     });
+  }
+
+  getTopCategories(): Observable<
+    {
+      category: string;
+      playcount: number;
+    }[]
+  > {
+    return this.topCategoryScrobbles.asObservable();
   }
 
   getTopArtists(period: number, forceReload = false): Observable<any> {
     if (!this.topArtists[period] || forceReload) {
       this.topArtists[period] = new BehaviorSubject<IScrobble[]>([]);
-      this.fetchTopArtists(period).subscribe();
+      this.fetchTopArtists(period);
     }
     return this.topArtists[period].asObservable();
   }
 
-  private fetchTopArtists(period: number): any {
+  private fetchTopArtists(period: number): void {
     const { start_ts, end_ts } = this.timeRangeService.getSliderRange();
-    return from(this.supabaseService.getTopArtists(start_ts, end_ts)).pipe(
-      catchError((error) => {
-        return of("Error occurred:", error);
-      }),
-      map((response) => {
-        if (response.status === 200) {
-          return response.data;
-        } else {
-          console.error("Unable to fetch top artists, status:", response.status, "Error:", response.error);
-        }
-      }),
-      tap((response) => {
-        this.topArtists[period].next(response);
-      })
-    );
-  }
-
-  getTopAlbums(period: any, forceReload = false): Observable<any> {
-    if (!this.topAlbums[period] || forceReload) {
-      this.topAlbums[period] = new BehaviorSubject<IScrobble[]>([]);
-      this.fetchTopAlbums(period).subscribe();
-    }
-    return this.topAlbums[period].asObservable();
-  }
-
-  private fetchTopAlbums(period: any): any {
-    return this.http
-      .get<IScrobble[]>(`${SERVER_API_URL}/scrobbles/top-albums`, {
-        params: {
-          range: String(period),
-        },
-        observe: "response",
-      })
+    from(this.supabaseService.getTopArtists(start_ts, end_ts))
       .pipe(
         catchError((error) => {
           return of("Error occurred:", error);
         }),
         map((response) => {
           if (response.status === 200) {
-            return response.body;
+            return response.data;
+          } else {
+            console.error("Unable to fetch top artists, status:", response.status, "Error:", response.error);
+          }
+        }),
+        tap((response) => {
+          this.topArtists[period].next(response);
+        })
+      )
+      .subscribe();
+  }
+
+  getTopAlbums(period: any, forceReload = false): Observable<any> {
+    if (!this.topAlbums[period] || forceReload) {
+      this.topAlbums[period] = new BehaviorSubject<IScrobble[]>([]);
+      this.fetchTopAlbums(period);
+    }
+    return this.topAlbums[period].asObservable();
+  }
+
+  private fetchTopAlbums(period: any): void {
+    const { start_ts, end_ts } = this.timeRangeService.getSliderRange();
+    from(this.supabaseService.getTopAlbums(start_ts, end_ts))
+      .pipe(
+        catchError((error) => {
+          return of("Error occurred:", error);
+        }),
+        map((response) => {
+          if (response.status === 200) {
+            return response.data;
           } else {
             console.error("Request failed with status:", response.status);
           }
@@ -95,7 +114,8 @@ export class ScrobbleService {
         tap((response) => {
           this.topAlbums[period].next(response);
         })
-      );
+      )
+      .subscribe();
   }
 
   getTopTracks(period: number, forceReload = false): Observable<any> {
@@ -147,48 +167,52 @@ export class ScrobbleService {
       .pipe(
         take(1),
         map((response) => {
-          if (response.status == 200) {
-            const categoryPercentages: ICategoryScrobbles = {};
-            response.data.forEach((r: any) => {
-              const { category, year, count } = r;
-
-              if (!categoryPercentages[category]) {
-                categoryPercentages[category] = [];
-                let range = this.timeRangeService.getSliderRangeMonths();
-                let step = 1;
-                if (range > 12 && range <= 24) {
-                  step = 2;
-                }
-                if (range > 24) {
-                  step = 3;
-                }
-                if (range > 36) {
-                  step = 5;
-                }
-                if (range > 48) {
-                  step = 6;
-                }
-                for (let year = startYear; year <= endYear; year++) {
-                  for (let month = 0; month <= 11; month += step) {
-                    categoryPercentages[category].push({ date: new Date(Date.UTC(year, month, 1)), count: 0 });
-                  }
-                }
-              }
-
-              const categoryYear = categoryPercentages[category].find(
-                (entry) =>
-                  entry.date.getTime() ===
-                  new Date(Date.UTC(r.year ? r.year : r.date, r.month ? r.month - 1 : 0, 1)).getTime()
-              );
-
-              if (categoryYear) categoryYear.count = r.count;
-            });
-
-            return categoryPercentages;
-          } else {
+          if (response.status !== 200) {
             console.error("Request failed with status:", response.status, "Error:", response.error);
             return null;
           }
+
+          const categoryPercentages: ICategoryScrobbles = {};
+
+          response.data.forEach((r: any) => {
+            const { category, year, count } = r;
+
+            if (!categoryPercentages[category]) {
+              categoryPercentages[category] = [];
+              let range = this.timeRangeService.getSliderRangeMonths();
+              let step = 1;
+              /*               if (range > 12 && range <= 24) step = 2;
+              if (range > 24) step = 3;
+              if (range > 36) step = 5;
+              if (range > 48) step = 6; */
+
+              for (let y = startYear; y <= endYear; y++) {
+                for (let month = 0; month <= 11; month += step) {
+                  categoryPercentages[category].push({ date: new Date(Date.UTC(y, month, 1)), count: 0 });
+                }
+              }
+            }
+
+            const entry = categoryPercentages[category].find(
+              (e) =>
+                e.date.getTime() ===
+                new Date(Date.UTC(r.year ? r.year : r.date, r.month ? r.month - 1 : 0, 1)).getTime()
+            );
+            if (entry) entry.count = r.count;
+          });
+
+          // Calculate top 10 categories
+          const topCategories = Object.entries(categoryPercentages)
+            .map(([category, entries]) => ({
+              category,
+              playcount: entries.reduce((sum, e) => sum + e.count, 0),
+            }))
+            .sort((a, b) => b.playcount - a.playcount)
+            .slice(0, 10);
+
+          this.topCategoryScrobbles.next(topCategories);
+
+          return categoryPercentages;
         }),
         tap((response) => this.categoryScrobbles.next(response))
       )
@@ -258,8 +282,6 @@ export class ScrobbleService {
   }
 
   private fetchAlbumScrobblesPerYear(album: string, artist: string): any {
-    console.log("roar");
-
     return this.http
       .get<IScrobble[]>(`${SERVER_API_URL}/scrobbles/album`, {
         params: {

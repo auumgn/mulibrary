@@ -3,6 +3,7 @@ import { ICategoryScrobbles, IScrobble } from "../../../shared/models/scrobble.m
 import { getTimestampMonthsAgo, getTimestampYearsAgo } from "src/app/shared/utils/date.util";
 import { ScrobbleService } from "../../../core/services/scrobble.service";
 import { ChartService } from "src/app/core/services/chart.service";
+import { normalizeName } from "src/app/shared/utils/normalize-name.util";
 
 @Component({
   selector: "app-home-library",
@@ -11,8 +12,9 @@ import { ChartService } from "src/app/core/services/chart.service";
   standalone: false,
 })
 export class HomeLibraryComponent implements OnInit {
+  normalizeName = normalizeName;
   chart: any;
-  periods = [3, 12];
+  periods = [3];
   recentScrobbles: IScrobble[] | null = null;
 
   topArtists: { [period: number]: IScrobble[] } = {};
@@ -28,15 +30,15 @@ export class HomeLibraryComponent implements OnInit {
       .subscribe((scrobbles: IScrobble[] | null) => (this.recentScrobbles = scrobbles));
 
     this.periods.forEach((period) => {
-      this.scrobbleService.getTopArtists(getTimestampMonthsAgo(period)).subscribe((artists: IScrobble[]) => {
+      this.scrobbleService.getTopArtists(3).subscribe((artists: IScrobble[]) => {
         this.topArtists[period] = artists;
       });
-      this.scrobbleService.getTopAlbums(getTimestampMonthsAgo(period)).subscribe((albums: IScrobble[]) => {
+      this.scrobbleService.getTopAlbums(3).subscribe((albums: IScrobble[]) => {
         this.topAlbums[period] = albums;
       });
-      this.scrobbleService.getTopTracks(getTimestampYearsAgo(period)).subscribe((tracks: IScrobble[]) => {
+      /*    this.scrobbleService.getTopTracks(getTimestampYearsAgo(period)).subscribe((tracks: IScrobble[]) => {
         this.topTracks[period] = tracks;
-      });
+      }); */
     });
   }
 }

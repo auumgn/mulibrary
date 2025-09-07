@@ -4,10 +4,10 @@ import { HttpClient } from "@angular/common/http";
 @Injectable({ providedIn: "root" })
 export class TimeRangeService {
   private sliderRangeSubject = new BehaviorSubject<{ start_ts: number; end_ts: number }>({
-    start_ts: Math.floor(new Date(2009, 5, 1).getTime() / 1000),
+    start_ts: Math.floor(new Date(new Date().setFullYear(new Date().getFullYear() - 3)).getTime() / 1000),
     end_ts: Math.floor(new Date().getTime() / 1000),
   });
-  private sliderRangeMonthsSubject = new BehaviorSubject<number>(24);
+  private sliderRangeMonthsSubject = new BehaviorSubject<number>(36);
   normalized = false;
 
   sliderRange$ = this.sliderRangeSubject.asObservable();

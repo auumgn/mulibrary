@@ -22,83 +22,27 @@
     }
   </ul> -->
 
-  @for (review of reviews; track $index; let i = $index) {
+  @for (album of albums; track $index; let i = $index) {
 
   <div class="flex h-full w-full mb-3">
     <div>
-      <img
-        class="h-20 min-w-20"
-        src="https://upload.wikimedia.org/wikipedia/en/thumb/8/8e/Can_-_Tago_Mago.jpg/250px-Can_-_Tago_Mago.jpg"
-        alt=""
-      />
+      <img class="h-16 min-w-16" [src]="album.artwork" alt="" />
     </div>
     <div class="ml-5 w-full">
-      <div class="flex justify-between w-full h-20">
+      <div class="flex justify-between w-full h-16">
         <div class="">
-          <div class="flex text-base justify-between w-full">
+          <div class="flex text-sm justify-between w-full">
             <div>
-              {{ review.artist }}
+              {{ album.artist }}
             </div>
           </div>
           <div class="text-sm mb-0 text-stone-400">
-            {{ review.album }}
+            {{ album.name }}
           </div>
-          @if(review.year){<span class="text-sm text-stone-400"> {{ review.year }}</span
+          @if(album.year){<span class="text-sm text-stone-400"> {{ album.year }}</span
           >}
         </div>
-        <div class="rating-display flex items-center" [style.gap]="circleSpacing">
-          @for (circle of getRatingCircles(reviews[0].rating); track $index; let i = $index) {
-          <!-- Filled Circle -->
-          @if (circle === 'filled') {
-          <svg
-            [style.width]="circleSize"
-            [style.height]="circleSize"
-            viewBox="0 0 20 20"
-            xmlns="http://www.w3.org/2000/svg"
-          >
-            <circle cx="10" cy="10" r="9" [attr.fill]="circleColor" [attr.stroke]="circleColor" stroke-width="2" />
-          </svg>
-          }
-
-          <!-- Half Circle -->
-          @if (circle === 'half') {
-          <svg
-            [style.width]="circleSize"
-            [style.height]="circleSize"
-            viewBox="0 0 20 20"
-            xmlns="http://www.w3.org/2000/svg"
-          >
-            <defs>
-              <mask [id]="'half-mask-' + i">
-                <rect x="0" y="0" width="10" height="20" fill="white" />
-                <rect x="10" y="0" width="10" height="20" fill="black" />
-              </mask>
-            </defs>
-            <circle cx="10" cy="10" r="9" [attr.fill]="emptyColor" [attr.stroke]="emptyStrokeColor" stroke-width="2" />
-            <circle
-              cx="10"
-              cy="10"
-              r="9"
-              [attr.fill]="circleColor"
-              [attr.stroke]="circleColor"
-              stroke-width="2"
-              [attr.mask]="'url(#half-mask-' + i + ')'"
-            />
-          </svg>
-          }
-
-          <!-- Empty Circle -->
-          @if (circle === 'empty') {
-          <svg
-            [style.width]="circleSize"
-            [style.height]="circleSize"
-            viewBox="0 0 20 20"
-            xmlns="http://www.w3.org/2000/svg"
-          >
-            <circle cx="10" cy="10" r="9" fill="none" [attr.stroke]="emptyStrokeColor" stroke-width="2" />
-          </svg>
-          } }
-        </div>
+        <app-rating [rating]="album.rating!"></app-rating>
       </div>
 
       <!-- review text -->

@@ -1,5 +1,5 @@
 import { Component, OnDestroy, OnInit } from "@angular/core";
-import { ActivatedRoute } from "@angular/router";
+import { ActivatedRoute, Router } from "@angular/router";
 import {
   EMPTY,
   Subject,
@@ -9,6 +9,7 @@ import {
   distinctUntilKeyChanged,
   first,
   of,
+  startWith,
   switchMap,
   take,
   takeUntil,
@@ -22,6 +23,8 @@ import { calculateBarWidth } from "src/app/shared/utils/calculate-bar-width";
 import { FlatNode } from "../sidebar/sidebar-library.component";
 import { ScrobbleService } from "src/app/core/services/scrobble.service";
 import { getCurrentYear } from "src/app/shared/utils/date.util";
+import { SupabaseService } from "src/app/core/services/supabase.service";
+import { normalizeName } from "src/app/shared/utils/normalize-name.util";
 
 @Component({
   selector: "app-album",
@@ -35,9 +38,12 @@ export class AlbumComponent implements OnInit, OnDestroy {
     private trackService: TrackService,
     private treeviewService: TreeviewService,
     private scrobbleService: ScrobbleService,
-    private activatedRoute: ActivatedRoute
+    private supabaseService: SupabaseService,
+    private activatedRoute: ActivatedRoute,
+    private router: Router
   ) {}
   calculateBarWidth = calculateBarWidth;
+  normalizeName = normalizeName;
   chart: any;
   destroy$ = new Subject();
   scrobblesByYear: { year: number; value: number }[] = [];
@@ -48,34 +54,35 @@ export class AlbumComponent implements OnInit, OnDestroy {
   length = 0;
   tags: string[] | undefined;
   cover = "";
+  admin = false;
 
   ngOnInit(): void {
     //Chart.register(BarController, BarElement, LinearScale, CategoryScale);
-
+    this.admin = this.supabaseService.isAdmin();
     this.activatedRoute.params
       .pipe(
         switchMap((params) => {
-          console.log(params);
-
           if (params["artist"] && params["album"]) {
             const { artist, album } = params;
             return combineLatest([
-              this.albumService.getAlbumByName(album, artist),
-              this.trackService.getAlbumTracks(album, artist),
-              this.scrobbleService.getAlbumScrobblesPerYear(album, artist),
+              this.albumService.getAlbumByName(artist, album),
+              this.trackService.getAlbumTracks(artist, album),
+              //this.scrobbleService.getAlbumScrobblesPerYear(album, artist),
             ]).pipe(take(1));
           }
           return EMPTY;
         })
       )
-      .subscribe(([album, tracks, scrobbles]) => {
+      .subscribe(([album, tracks]) => {
+        console.log(album);
+
         this.length = 0;
         this.trackPlays = 0;
         this.album = album;
-        this.scrobblesByYear = Object.entries(scrobbles).map(([year, value]) => ({
+        /*  this.scrobblesByYear = Object.entries(scrobbles).map(([year, value]) => ({
           year: Number(year),
           value: value as number,
-        }));
+        })); */
         //  this.createChart();
 
         if (album) this.treeviewService.updateActiveNode(new FlatNode(album.name, 2, album, false, false, true));
@@ -83,11 +90,15 @@ export class AlbumComponent implements OnInit, OnDestroy {
           this.cover = "http://localhost:3000/artwork/" + this.album.artwork![0].slice(2).slice(0, -2);
         this.tracks = tracks;
         tracks.map((track) => {
-          this.length += track.duration ? track.duration : 0;
+          this.length += Number(track.duration) ? Number(track.duration) : 0;
           this.trackPlays += track.playcount ? track.playcount : 0;
         });
         this.albumPlays = Math.floor((this.trackPlays / this.tracks.length) * 100) / 100;
       });
+  }
+
+  editAlbum() {
+    this.router.navigate(["edit"], { relativeTo: this.activatedRoute });
   }
 
   setPlaceholderAlbumCover() {}

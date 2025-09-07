@@ -1,0 +1,6 @@
+.masonry-item {
+  break-inside: avoid;
+  display: inline-block; /* <-- makes margin-bottom apply */
+  margin-bottom: 4rem; /* vertical gap */
+  width: 100%; /* so it still fills column width */
+}

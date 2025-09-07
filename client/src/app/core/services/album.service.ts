@@ -16,7 +16,7 @@ import { TimeRangeService } from "./time-range.service";
 export class AlbumService {
   albums: BehaviorSubject<{ [artist_id: string]: Album[] }> = new BehaviorSubject<{ [artist_id: string]: Album[] }>({});
   albumNodes: BehaviorSubject<ITreenode[]> = new BehaviorSubject<ITreenode[]>([]);
-  recentReviews: BehaviorSubject<Review[]> = new BehaviorSubject<Review[]>([]);
+  recentReviews: BehaviorSubject<Album[]> = new BehaviorSubject<Album[]>([]);
   backlog: BehaviorSubject<Album[]> = new BehaviorSubject<Album[]>([]);
   // activeAlbum: Subject<>;
   // TODO: move range slider from scrobble service and replace the service here
@@ -32,6 +32,26 @@ export class AlbumService {
       .subscribe(() => {
         this.fetchBacklog();
       });
+  }
+
+  upsertReview(artist: string, albumName: string, album_id: number, rating: number, review: string) {
+    return from(this.supabaseService.upsertReview(album_id, rating, review)).pipe(
+      map((res) => {
+        if (this.albums.value[artist]) {
+          const updatedAlbums = this.albums.value[artist].map((album) =>
+            normalizeName(album.name) === albumName
+              ? { ...album, rating: res.data[0].rating, review: res.data[0].review }
+              : album
+          );
+
+          this.albums.next({
+            ...this.albums.value,
+            [artist]: updatedAlbums,
+          });
+        }
+        return res; // Return the response
+      })
+    );
   }
 
   getBacklog(forceReload = false): Observable<Album[]> {
@@ -60,7 +80,7 @@ export class AlbumService {
       .subscribe();
   }
 
-  getRecentReviews(forceReload = false): Observable<Review[]> {
+  getRecentReviews(forceReload = false): Observable<Album[]> {
     if (this.recentReviews.value.length === 0 || forceReload) {
       this.fetchRecentReviews().subscribe();
     }
@@ -129,10 +149,12 @@ export class AlbumService {
     );
   }
 
-  getAlbumByName(album: string, artist: string, forceReload = false): Observable<Album | undefined> {
+  getAlbumByName(artist: string, album: string, forceReload = false): Observable<Album | undefined> {
     if (!this.albums.value[artist] || forceReload) {
-      this.fetchAlbumByName(album, artist).subscribe();
+      this.fetchAlbumByName(artist, album).subscribe();
     }
+    console.log(this.albums.value);
+
     return this.albums.pipe(
       map((albums) => albums[artist]),
       filter((albums) => {
@@ -153,30 +175,22 @@ export class AlbumService {
     );
   }
 
-  private fetchAlbumByName(album: string, artist: string): any {
-    return this.http
-      .get<Album>(`${SERVER_API_URL}/album/name`, {
-        params: {
-          album,
-          artist,
-        },
-        observe: "response",
+  private fetchAlbumByName(artist: string, album: string): any {
+    return from(this.supabaseService.getAlbumByName(artist, album)).pipe(
+      catchError((error) => {
+        return of("Error occurred:", error);
+      }),
+      map((response) => {
+        debug("fetchAlbumByName() response", response);
+        if (response.status === 200) {
+          if (this.albums.value[artist]) this.albums.value[artist] = [...this.albums.value[artist], ...response.data];
+          else this.albums.value[artist] = response.data;
+          this.albums.next(this.albums.value);
+        } else {
+          console.log("Request failed with status:", response.status);
+        }
       })
-      .pipe(
-        catchError((error) => {
-          return of("Error occurred:", error);
-        }),
-        map((response) => {
-          debug("fetchAlbumByName() response", response);
-          if (response.status === 200) {
-            if (this.albums.value[artist]) this.albums.value[artist] = [...this.albums.value[artist], ...response.body];
-            else this.albums.value[artist] = response.body;
-            this.albums.next(this.albums.value);
-          } else {
-            console.log("Request failed with status:", response.status);
-          }
-        })
-      );
+    );
   }
 
   /* fetchAlbumById(artist: string, album: string): any {
@@ -204,28 +218,21 @@ export class AlbumService {
   } */
 
   fetchAlbumsByArtistName(artistName: string): any {
-    return this.http
-      .get<Album[]>(`${SERVER_API_URL}/album/artist`, {
-        params: {
-          artistName,
-        },
-        observe: "response",
-      })
-      .pipe(
-        catchError((error) => {
-          return of("Error occurred:", error);
-        }),
-        map((response) => {
-          debug("fetchAlbumsByArtistName() response", response);
+    return from(this.supabaseService.getAlbumsByArtistName(artistName)).pipe(
+      catchError((error) => {
+        return of("Error occurred:", error);
+      }),
+      map((response) => {
+        debug("fetchAlbumsByArtistName() response", response);
 
-          if (response.status === 200) {
-            this.albums.value[artistName] = response.body;
-            console.log("NEXT!", artistName, "updated!");
-            this.albums.next(this.albums.value);
-          } else {
-            console.log("Request failed with status:", response.status);
-          }
-        })
-      );
+        if (response.status === 200) {
+          this.albums.value[artistName] = response.data;
+          console.log("NEXT!", artistName, "updated!");
+          this.albums.next(this.albums.value);
+        } else {
+          console.log("Request failed with status:", response.status);
+        }
+      })
+    );
   }
 }

@@ -14,7 +14,10 @@ import { ArtistComponent } from "./artist/artist.component";
 import { CategoryComponent } from "./category/category.component";
 import { CategoryChartComponent } from "./chart/category-chart/category-chart.component";
 import { RecentRatingsComponent } from "./home/recent/recent-ratings/recent-ratings.component";
-import { BacklogComponent } from './home/backlog/backlog.component';
+import { BacklogComponent } from "./home/backlog/backlog.component";
+import { ReactiveFormsModule } from "@angular/forms";
+import { EditAlbumComponent } from "./album/edit-album/edit-album.component";
+import { TopCategoriesComponent } from "./home/top/top-categories/top-categories.component";
 
 const routes: Routes = [
   {
@@ -28,6 +31,10 @@ const routes: Routes = [
       {
         path: "album/:artist/:album",
         component: AlbumComponent,
+      },
+      {
+        path: "album/:artist/:album/edit",
+        component: EditAlbumComponent,
       },
       {
         path: "artist/:artist",
@@ -49,12 +56,14 @@ const routes: Routes = [
     TopArtistsComponent,
     TopAlbumsComponent,
     TopTracksComponent,
+    TopCategoriesComponent,
     RecentRatingsComponent,
     AlbumComponent,
     ArtistComponent,
     CategoryComponent,
     BacklogComponent,
+    EditAlbumComponent,
   ],
-  imports: [CommonModule, RouterModule.forChild(routes), SharedModule, CategoryChartComponent],
+  imports: [CommonModule, RouterModule.forChild(routes), SharedModule, CategoryChartComponent, ReactiveFormsModule],
 })
 export class LibraryModule {}

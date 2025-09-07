@@ -1,0 +1,61 @@
+<div class="rating-display flex items-center h-full" [style.gap]="'4px'" (mouseleave)="onMouseLeave()">
+  @for (item of Array(maxCircles); track $index; let i = $index) {
+  <div class="relative inline-block" [style.width]="circleSize" [style.height]="circleSize">
+    <!-- Base empty circle -->
+    <svg
+      [style.width]="circleSize"
+      [style.height]="circleSize"
+      viewBox="0 0 20 20"
+      xmlns="http://www.w3.org/2000/svg"
+      class="absolute top-0 left-0"
+    >
+      <circle cx="10" cy="10" r="9" fill="none" [attr.stroke]="emptyStrokeColor" stroke-width="2" />
+    </svg>
+
+    <!-- Half-filled overlay (left semicircle) -->
+    @if (getCircleState(i) === 'half' || getCircleState(i) === 'full') {
+    <svg
+      [style.width]="circleSize"
+      [style.height]="circleSize"
+      viewBox="0 0 20 20"
+      xmlns="http://www.w3.org/2000/svg"
+      class="absolute top-0 left-0"
+      style="pointer-events: none"
+    >
+      <path d="M 10,1 A 9,9 0 0,0 10,19 Z" [attr.fill]="circleColor" [attr.stroke]="circleColor" stroke-width="1" />
+    </svg>
+    }
+
+    <!-- Full-filled overlay (right semicircle) -->
+    @if (getCircleState(i) === 'full') {
+    <svg
+      [style.width]="circleSize"
+      [style.height]="circleSize"
+      viewBox="0 0 20 20"
+      xmlns="http://www.w3.org/2000/svg"
+      class="absolute top-0 left-0"
+      style="pointer-events: none"
+    >
+      <path d="M 10,1 A 9,9 0 0,1 10,19 Z" [attr.fill]="circleColor" [attr.stroke]="circleColor" stroke-width="1" />
+    </svg>
+    }
+
+    <!-- Interaction overlays -->
+    @if (editable) {
+    <!-- Left half click area -->
+    <div
+      class="absolute top-0 left-0 w-1/2 h-full cursor-pointer z-10"
+      (mouseenter)="onHover(i, false)"
+      (click)="onClick(i, false)"
+    ></div>
+
+    <!-- Right half click area -->
+    <div
+      class="absolute top-0 right-0 w-1/2 h-full cursor-pointer z-10"
+      (mouseenter)="onHover(i, true)"
+      (click)="onClick(i, true)"
+    ></div>
+    }
+  </div>
+  }
+</div>

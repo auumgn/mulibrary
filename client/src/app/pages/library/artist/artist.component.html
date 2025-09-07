@@ -5,35 +5,39 @@
     <h1 class="text-3xl mb-10 font-semibold leading-6">{{ artist.name }}</h1>
   </div>
 </div>
-<h3 class="mb-10">Albums</h3>
+<h3 class="mb-6">Albums</h3>
 <!-- ALBUMS -->
+<div class="flex text-stone-400 mb-2 text-xs">
+  <div class="ml-[90px] md:flex-[0.8] flex-[0.6]">Album/Year</div>
+  <div class="flex-[0.5] md:flex-[0.5]">Rating</div>
+  <div class="flex-[0.25]">Duration</div>
+  <!-- limited width -->
+  <div class="md:flex-1 text-right md:text-left min-w-[40px]">Plays</div>
+  <!-- grows -->
+</div>
 <ul>
   @for (album of albums; track $index; let i = $index) {
   <li>
     <div class="flex mb-4">
       <div class="text-sm mr-10 h-[50px] w-[50px] hover:cursor-pointer" (click)="navigateToAlbumPage(album)">
-        <img
-          [src]="album.artwork && album.artwork.length > 0 && album.artwork[0]"
-          alt="Album cover image"
-          (error)="setPlaceholderAlbumCover()"
-        />
+        <img [src]="album.artwork?.[0]" alt="Album cover" (error)="setPlaceholderAlbumCover()" />
       </div>
       <div class="flex items-center flex-1">
-        <div class="w-2/3 hover:cursor-pointer" (click)="navigateToAlbumPage(album)">
+        <div class="md:flex-[0.8] flex-[0.6] hover:cursor-pointer" (click)="navigateToAlbumPage(album)">
           <h2 class="text-base text-neutral-200">{{ album.name }}</h2>
           <div class="text-sm text-neutral-400">{{ album.year }}</div>
         </div>
-        <div class="w-1/6 text-sm">
-          {{ album.duration | formatDuration }}
-        </div>
-        <div class="w-1/3 flex items-center">
-          <div class="w-5/6">
+
+        <app-rating class="flex-[0.5] md:flex-[0.5]" [rating]="album.rating || 0"></app-rating>
+        <div class="flex-[0.25] text-sm">{{ album.duration | formatDuration }}</div>
+        <div class="md:flex-1 flex items-center text-right md:text-left min-w-[40px]">
+          <div class="text-sm w-[40px] ml-auto md:ml-0">{{ album.scrobbles }}</div>
+          <div class="w-5/6 hidden md:block">
             <div
               class="bar bg-teal-900 h-3 mt-[1px]"
               [style.width.%]="calculateBarWidth(albums, album.scrobbles)"
             ></div>
           </div>
-          <div class="text-sm text-right w-1/6">{{ album.scrobbles }}</div>
         </div>
       </div>
     </div>

@@ -11,7 +11,6 @@ import { calculateBarWidth } from "src/app/shared/utils/calculate-bar-width";
   styleUrl: "./backlog.component.css",
 })
 export class BacklogComponent implements OnInit {
-  calculateBarWidth = calculateBarWidth;
   albums: Album[] = [];
 
   constructor(private albumService: AlbumService, private timeRangeService: TimeRangeService) {}

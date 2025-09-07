@@ -3,8 +3,12 @@
   <div class="flex mb-14">
     <!-- Title and metadata -->
     <div class="flex-1">
-      <h1 class="text-3xl mb-10 font-semibold leading-6">{{ album.name }}</h1>
-      <div class="flex text-sm">
+      <div class="flex">
+        <h1 class="text-3xl mb-6 font-semibold leading-6">{{ album.name }}</h1>
+        <button class="text-sm text-stone-400 mb-3 ml-3" (click)="editAlbum()">edit</button>
+      </div>
+      @if(album && album.rating) {<app-rating [rating]="album.rating"></app-rating>}
+      <div class="flex text-sm mt-6">
         <div class="w-40 album-metadata text-stone-400">
           <div>Artist</div>
           @if (album.year) {
@@ -24,7 +28,8 @@
         <div class="album-metadata">
           <div>
             @for (artist of album.artist; track $index; let i = $index) {
-            {{ artist }}@if (i < album.artist!.length - 1) {
+            <a [routerLink]="['/library', '/artist', normalizeName(artist)]">{{ artist }}</a
+            >@if (i < album.artist!.length - 1) {
             <span>, </span>
             } }
           </div>
@@ -50,42 +55,50 @@
     </div>
     }
   </div>
+  } @if (album && album.review) {
+  <div class="mb-10">
+    <div class="text-sm">{{ album.review }}</div>
+  </div>
   }
-  <h2 class="mb-10">Tracklist</h2>
+  <h2 class="mb-4">Tracklist</h2>
   <!-- TRACKS -->
-  <div class="flex text-stone-400 mb-6">
-    <div class="w-2/3 flex">
-      <div class="mr-5 min-w-[20px] text-xs text-center">#</div>
-      <div class="min-w-0 w-2/3 text-xs">Title</div>
-      <div class="text-xs w-[100px]">Duration</div>
+  <div class="flex text-stone-400 mb-2 text-xs">
+    <div class="w-[20px] mr-2 text-center">#</div>
+    <div class="w-2/5">Title</div>
+    <div class="min-w-[70px]">Duration</div>
+    <div class="flex-1 flex items-center">
+      <div class="text-xs w-[40px] ml-auto">Plays</div>
+      <div class="w-5/6"></div>
     </div>
-    <div class="text-xs w-1/3">Plays</div>
   </div>
-  <!-- <hr class="border-neutral-700 mb-4 mt-2" /> -->
-  <div class="flex">
-    <ul class="flex-1">
-      @for (track of tracks; track $index; let i = $index) {
-      <li class="flex items-center h-8">
-        <div class="w-3/5 flex">
-          <div class="mr-5 min-w-[20px] text-sm text-stone-400 text-center flex-1">{{ i + 1 }}</div>
-          <div class="min-w-0 pr-5 text-sm overflow-hidden text-ellipsis whitespace-nowrap">
-            {{ track.name }}
-          </div>
-          <div class="text-sm pr-4 w-1/3">{{ track.duration | formatDuration }}</div>
+
+  <ul>
+    @for (track of tracks; track $index; let i = $index) {
+    <li>
+      <div class="flex mb-2 items-center">
+        <!-- track number -->
+        <div class="text-sm text-stone-400 w-[20px] text-center mr-2">{{ i + 1 }}</div>
+
+        <!-- track title -->
+        <div class="w-2/5 min-w-0 pr-4 text-sm overflow-hidden text-ellipsis whitespace-nowrap">
+          {{ track.name }}
         </div>
-        <div class="w-2/5 flex items-center">
+
+        <!-- duration -->
+        <div class="min-w-[70px] text-sm">{{ track.duration | formatDuration }}</div>
+
+        <!-- plays + bar -->
+        <div class="flex-1 flex items-center">
+          <div class="text-sm w-[40px] ml-auto">{{ track.playcount }}</div>
           <div class="w-5/6">
-            <div
-              class="bar bg-teal-900 h-3 mt-[1px]"
-              [style.width.%]="calculateBarWidth(tracks, track.playcount)"
-            ></div>
+            <div class="bar bg-primary h-3 mt-[1px]" [style.width.%]="calculateBarWidth(tracks, track.playcount)"></div>
           </div>
-          <div class="text-sm text-right w-1/6">{{ track.playcount }}</div>
         </div>
-      </li>
-      }
-    </ul>
-  </div>
+      </div>
+    </li>
+    }
+  </ul>
+
   <!-- LISTENING HISTORY -->
   <div class="flex">
     <div class="w-2/3"></div>

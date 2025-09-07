@@ -1,0 +1,7 @@
+<div class="flex text-sm">
+  <div class="pr-4 pl-4 md:pl-8 pt-[23px]">
+    <a class="mr-2" [routerLink]="'/'">Home</a>
+    <a [routerLink]="'/library'">Library</a>
+  </div>
+  @if (isLibrary) { <app-library-search class="bg-neutral-900 block w-full pr-4 md:pr-8 pt-4"></app-library-search> }
+</div>
