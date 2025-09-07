@@ -1,5 +1,5 @@
 import { NgModule } from "@angular/core";
-import { Routes, RouterModule } from "@angular/router"; // CLI imports router
+import { Routes, RouterModule, PreloadAllModules } from "@angular/router"; // CLI imports router
 import { LoginComponent } from "./pages/login/login.component";
 import { HomeComponent } from "./pages/home/home.component";
 
@@ -20,7 +20,7 @@ const routes: Routes = [
 
 // configures NgModule imports and exports
 @NgModule({
-  imports: [RouterModule.forRoot(routes)],
+  imports: [RouterModule.forRoot(routes, { preloadingStrategy: PreloadAllModules })],
   exports: [RouterModule],
 })
 export class AppRoutingModule {}

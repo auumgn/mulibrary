@@ -179,12 +179,7 @@ export class ScrobbleService {
 
             if (!categoryPercentages[category]) {
               categoryPercentages[category] = [];
-              let range = this.timeRangeService.getSliderRangeMonths();
               let step = 1;
-              /*               if (range > 12 && range <= 24) step = 2;
-              if (range > 24) step = 3;
-              if (range > 36) step = 5;
-              if (range > 48) step = 6; */
 
               for (let y = startYear; y <= endYear; y++) {
                 for (let month = 0; month <= 11; month += step) {

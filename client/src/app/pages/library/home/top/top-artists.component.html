@@ -11,7 +11,9 @@
   <li class="flex items-center h-6">
     <!--  <div class="mr-2 min-w-[20px] text-sm text-stone-400 text-center">{{ i + 1 }}</div> -->
     <div class="text-sm w-1/2 overflow-hidden text-ellipsis whitespace-nowrap pr-8">
-      {{ artist.artist }}
+      <a class="hover:underline" [routerLink]="['/library', 'artist', normalizeName(artist.artist)]">{{
+        artist.artist
+      }}</a>
     </div>
     <!--  <div class="text-sm w-[30%]">{{ artist.category ? artist.category : "-" }}</div> -->
     <div class="w-1/2 flex items-center">

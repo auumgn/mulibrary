@@ -53,7 +53,6 @@ export class AlbumComponent implements OnInit, OnDestroy {
   albumPlays = 0;
   length = 0;
   tags: string[] | undefined;
-  cover = "";
   admin = false;
 
   ngOnInit(): void {
@@ -86,8 +85,6 @@ export class AlbumComponent implements OnInit, OnDestroy {
         //  this.createChart();
 
         if (album) this.treeviewService.updateActiveNode(new FlatNode(album.name, 2, album, false, false, true));
-        if (this.album && this.album.artwork && this.album.artwork.length > 0)
-          this.cover = "http://localhost:3000/artwork/" + this.album.artwork![0].slice(2).slice(0, -2);
         this.tracks = tracks;
         tracks.map((track) => {
           this.length += Number(track.duration) ? Number(track.duration) : 0;

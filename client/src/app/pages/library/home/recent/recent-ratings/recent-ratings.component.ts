@@ -2,6 +2,7 @@ import { Component, OnInit } from "@angular/core";
 import { AlbumService } from "src/app/core/services/album.service";
 import { Album } from "src/app/shared/models/album.model";
 import { Review } from "src/app/shared/models/review.model";
+import { normalizeName } from "src/app/shared/utils/normalize-name.util";
 
 @Component({
   selector: "app-recent-ratings",
@@ -11,6 +12,7 @@ import { Review } from "src/app/shared/models/review.model";
 })
 export class RecentRatingsComponent implements OnInit {
   albums: Album[] = [];
+  normalizeName = normalizeName;
 
   constructor(private albumService: AlbumService) {}
 

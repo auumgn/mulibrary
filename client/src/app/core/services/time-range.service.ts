@@ -7,13 +7,18 @@ export class TimeRangeService {
     start_ts: Math.floor(new Date(new Date().setFullYear(new Date().getFullYear() - 3)).getTime() / 1000),
     end_ts: Math.floor(new Date().getTime() / 1000),
   });
-  private sliderRangeMonthsSubject = new BehaviorSubject<number>(36);
+  startDate = new Date(2009, 5, 1);
+  endDate = new Date();
+  totalMonths =
+    (this.endDate.getFullYear() - this.startDate.getFullYear()) * 12 +
+    (this.endDate.getMonth() - this.startDate.getMonth());
+  private sliderRangeMonthsSubject = new BehaviorSubject<[number, number]>([this.totalMonths - 36, this.totalMonths]);
   normalized = false;
 
   sliderRange$ = this.sliderRangeSubject.asObservable();
   sliderRangeMonths$ = this.sliderRangeMonthsSubject.asObservable();
 
-  setSliderRange(start_ts: number, end_ts: number, rangeMonths: number) {
+  setSliderRange(start_ts: number, end_ts: number, rangeMonths: [number, number]) {
     this.sliderRangeSubject.next({ start_ts, end_ts });
     this.sliderRangeMonthsSubject.next(rangeMonths);
   }
@@ -22,7 +27,11 @@ export class TimeRangeService {
     return this.sliderRangeSubject.value;
   }
 
-  getSliderRangeMonths(): number {
+  getTotalMonths(): number {
+    return this.totalMonths;
+  }
+
+  getSliderRangeMonths(): [number, number] {
     return this.sliderRangeMonthsSubject.value;
   }
 

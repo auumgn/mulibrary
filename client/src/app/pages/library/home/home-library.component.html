@@ -14,7 +14,9 @@
       <li class="mb-1">
         <div class="flex items-center">
           <div class="text-sm w-[40%]">
-            <a [routerLink]="['/library', 'artist', normalizeName(scrobble.artist)]">{{ scrobble.artist }}</a>
+            <a class="hover:underline" [routerLink]="['/library', 'artist', normalizeName(scrobble.artist)]">{{
+              scrobble.artist
+            }}</a>
           </div>
           <div class="text-sm w-[45%]">{{ scrobble.name }}</div>
           <!--        <div class="text-sm w-1/3">{{ scrobble.album ? scrobble.album : "-" }}</div> -->

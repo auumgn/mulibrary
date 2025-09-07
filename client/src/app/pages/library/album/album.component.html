@@ -1,13 +1,15 @@
 <ng-container>
   @if (album !== undefined) {
-  <div class="flex mb-14">
+  <div class="flex mb-14 mt-4">
     <!-- Title and metadata -->
     <div class="flex-1">
       <div class="flex">
         <h1 class="text-3xl mb-6 font-semibold leading-6">{{ album.name }}</h1>
-        <button class="text-sm text-stone-400 mb-3 ml-3" (click)="editAlbum()">edit</button>
+        @if (admin) {<button class="text-sm text-stone-400 mb-3 ml-3" (click)="editAlbum()">edit</button>}
       </div>
-      @if(album && album.rating) {<app-rating [rating]="album.rating"></app-rating>}
+      @if(album && album.rating) {
+      <div class="h-4"><app-rating [rating]="album.rating"></app-rating></div>
+      }
       <div class="flex text-sm mt-6">
         <div class="w-40 album-metadata text-stone-400">
           <div>Artist</div>
@@ -28,7 +30,7 @@
         <div class="album-metadata">
           <div>
             @for (artist of album.artist; track $index; let i = $index) {
-            <a [routerLink]="['/library', '/artist', normalizeName(artist)]">{{ artist }}</a
+            <a class="hover:underline" [routerLink]="['/library', '/artist', normalizeName(artist)]">{{ artist }}</a
             >@if (i < album.artist!.length - 1) {
             <span>, </span>
             } }
@@ -49,9 +51,9 @@
         </div>
       </div>
     </div>
-    @if (album.artwork && album.artwork.length > 0) {
+    @if (album.artwork) {
     <div class="h-[300px] w-[300px]">
-      <img [src]="cover" alt="Album cover image" (error)="setPlaceholderAlbumCover()" />
+      <img [src]="album.artwork" alt="Album cover image" (error)="setPlaceholderAlbumCover()" />
     </div>
     }
   </div>
@@ -91,7 +93,10 @@
         <div class="flex-1 flex items-center">
           <div class="text-sm w-[40px] ml-auto">{{ track.playcount }}</div>
           <div class="w-5/6">
-            <div class="bar bg-primary h-3 mt-[1px]" [style.width.%]="calculateBarWidth(tracks, track.playcount)"></div>
+            <div
+              class="bar bg-teal-900 h-3 mt-[1px]"
+              [style.width.%]="calculateBarWidth(tracks, track.playcount)"
+            ></div>
           </div>
         </div>
       </div>

@@ -24,7 +24,10 @@
 
   @for (album of albums; track $index; let i = $index) {
 
-  <div class="flex h-full w-full mb-3">
+  <div
+    class="flex h-full w-full mb-3"
+    [routerLink]="['/library', 'album', normalizeName(album.artist!), normalizeName(album.name)]"
+  >
     <div>
       <img class="h-16 min-w-16" [src]="album.artwork" alt="" />
     </div>

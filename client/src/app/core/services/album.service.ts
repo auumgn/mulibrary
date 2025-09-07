@@ -1,5 +1,5 @@
 import { Injectable } from "@angular/core";
-import { BehaviorSubject, Observable, catchError, filter, from, map, of, skip, tap } from "rxjs";
+import { BehaviorSubject, Observable, catchError, filter, from, map, of, skip, take, tap } from "rxjs";
 import { HttpClient } from "@angular/common/http";
 import { SERVER_API_URL } from "src/app/app.constants";
 import { Scrobble } from "src/app/shared/models/scrobble.model";

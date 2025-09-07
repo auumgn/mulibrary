@@ -1,4 +1,5 @@
-export function normalizeName(name: string) {
+export function normalizeName(name: string | string[]) {
+  if (Array.isArray(name)) name = name.join("-");
   return name
     .replace(/\/|:|,|[!@#$%^~+&*?]|\(|\)|\\"/g, " ")
     .replace(/[''"".]/g, "")

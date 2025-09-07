@@ -1,5 +1,4 @@
 import { Component, HostListener, OnInit, ViewChild, ElementRef } from "@angular/core";
-import { HttpClient, HttpHeaders } from "@angular/common/http";
 import rangeSlider from "range-slider-input";
 import "range-slider-input/dist/style.css";
 import { ScrobbleService } from "src/app/core/services/scrobble.service";
@@ -18,15 +17,12 @@ export class MainLibraryComponent implements OnInit {
   startDate = new Date(2009, 5, 1);
   endDate = new Date();
   displayRange: string = "";
+  totalMonths = 0;
   currentRange: [number, number] = [0, 0];
   leftTooltipText: string = "";
   rightTooltipText: string = "";
   leftTooltipPosition: number = 0;
   rightTooltipPosition: number = 0;
-
-  totalMonths =
-    (this.endDate.getFullYear() - this.startDate.getFullYear()) * 12 +
-    (this.endDate.getMonth() - this.startDate.getMonth());
 
   @ViewChild("leftTooltip") leftTooltip!: ElementRef;
   @ViewChild("rightTooltip") rightTooltip!: ElementRef;
@@ -43,7 +39,8 @@ export class MainLibraryComponent implements OnInit {
 
   ngOnInit(): void {
     this.windowWidth = window.innerWidth;
-    this.currentRange = [this.totalMonths - 36, this.totalMonths];
+    this.totalMonths = this.timeRangeService.getTotalMonths();
+    this.timeRangeService.sliderRangeMonths$.subscribe((range) => (this.currentRange = range));
 
     this.scrobbleService.getTimelineSliderScrobbles().subscribe((data) => {
       this.data = data;
@@ -83,7 +80,7 @@ export class MainLibraryComponent implements OnInit {
     const start_ts = Math.floor(startDate.getTime() / 1000);
     const end_ts = Math.floor(endDate.getTime() / 1000);
 
-    this.timeRangeService.setSliderRange(start_ts, end_ts, range[1] - range[0]);
+    this.timeRangeService.setSliderRange(start_ts, end_ts, range);
   }
 
   updateTooltipPositions(value: number[]) {

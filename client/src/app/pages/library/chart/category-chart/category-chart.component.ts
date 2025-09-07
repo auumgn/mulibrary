@@ -1,6 +1,7 @@
 import { Component, OnInit, ElementRef, ViewChild, HostListener } from "@angular/core";
 import * as d3 from "d3";
 import { ScrobbleService } from "src/app/core/services/scrobble.service";
+import { TimeRangeService } from "src/app/core/services/time-range.service";
 import { ICategoryScrobbles } from "src/app/shared/models/scrobble.model";
 
 @Component({
@@ -36,7 +37,7 @@ export class CategoryChartComponent implements OnInit {
     Emo: "#fb923c",
     "Noise & Power Electronics": "#fdba74",
     "Singer-Songwriter": "#fbbf24",
-    "Hip-Hop": "#fcd34d",
+    "Hip-hop": "#fcd34d",
     Powerviolence: "#facc15",
     Pop: "#fde68a",
     Psych: "#fde047",
@@ -63,8 +64,8 @@ export class CategoryChartComponent implements OnInit {
   private margin = { top: 20, right: 40, bottom: 30, left: 40 };
   private height = 600 - this.margin.top - this.margin.bottom;
   private width = 0;
-
-  constructor(private scrobbleService: ScrobbleService) {}
+  monthRange = 0;
+  constructor(private scrobbleService: ScrobbleService, private timeRangeService: TimeRangeService) {}
 
   ngOnInit(): void {
     this.scrobbleService.getCategoryScrobbles().subscribe((categories) => {
@@ -75,6 +76,7 @@ export class CategoryChartComponent implements OnInit {
       this.updateChart();
       if (this.wiggleEnabled) d3.interval(() => this.animate(), this.wiggleSpeed);
     });
+    this.timeRangeService.sliderRangeMonths$.subscribe((range) => (this.monthRange = range[1] - range[0]));
   }
 
   private prepareData(categories: ICategoryScrobbles) {
@@ -95,8 +97,12 @@ export class CategoryChartComponent implements OnInit {
     const colorOrder = Object.keys(this.colors);
     this.keys = Object.keys(categories).sort((a, b) => colorOrder.indexOf(a) - colorOrder.indexOf(b));
 
-    this.stackData = this.downsampleData(this.stackData, 6, 12); // every 3rd month
-    /*     this.color = d3.scaleOrdinal<string>().domain(this.keys).range(this.colors); */
+    let step = 2;
+    if (this.monthRange > 12) step = 4;
+    if (this.monthRange > 24) step = 6;
+    /*     if (this.monthRange > 36) step = 5;
+    if (this.monthRange > 48) step = 6; */
+    this.stackData = this.downsampleData(this.stackData, step, 12);
     this.stack = d3.stack().keys(this.keys).offset(d3.stackOffsetWiggle);
     this.phases = {};
     this.keys.forEach((k) => (this.phases[k] = Math.random() * Math.PI * 2));
