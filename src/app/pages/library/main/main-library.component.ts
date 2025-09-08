@@ -3,7 +3,6 @@ import { Component, HostListener, OnInit, ViewChild, ElementRef } from "@angular
 import { ScrobbleService } from "src/app/core/services/scrobble.service";
 import { TimeRangeService } from "src/app/core/services/time-range.service";
 import rangeSlider from "range-slider-input";
-import "range-slider-input/dist/style.css";
 
 @Component({
   selector: "app-main-library",
