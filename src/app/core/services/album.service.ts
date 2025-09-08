@@ -1,20 +1,20 @@
 import { Injectable } from "@angular/core";
-import { BehaviorSubject, Observable, catchError, filter, from, map, of, skip, take, tap } from "rxjs";
+import { BehaviorSubject, Observable, catchError, filter, from, map, of, skip } from "rxjs";
 import { HttpClient } from "@angular/common/http";
 import { SERVER_API_URL } from "src/app/app.constants";
-import { Scrobble } from "src/app/shared/models/scrobble.model";
 import { Album } from "src/app/shared/models/album.model";
 import { normalizeName } from "src/app/shared/utils/normalize-name.util";
 import { ITreenode } from "src/app/shared/models/treenode.model";
 import { debug } from "src/app/shared/utils/debug-util";
-import { Review } from "src/app/shared/models/review.model";
 import { SupabaseService } from "./supabase.service";
-import { ScrobbleService } from "./scrobble.service";
 import { TimeRangeService } from "./time-range.service";
 
 @Injectable({ providedIn: "root" })
 export class AlbumService {
   albums: BehaviorSubject<{ [artist_id: string]: Album[] }> = new BehaviorSubject<{ [artist_id: string]: Album[] }>({});
+  discographyFetched: BehaviorSubject<{ [artist_id: string]: boolean }> = new BehaviorSubject<{
+    [artist_id: string]: boolean;
+  }>({});
   albumNodes: BehaviorSubject<ITreenode[]> = new BehaviorSubject<ITreenode[]>([]);
   recentReviews: BehaviorSubject<Album[]> = new BehaviorSubject<Album[]>([]);
   backlog: BehaviorSubject<Album[]> = new BehaviorSubject<Album[]>([]);
@@ -73,7 +73,7 @@ export class AlbumService {
           if (response.status === 200) {
             this.backlog.next(response.data);
           } else {
-            console.log("fetchBacklog() request failed with status:", response.status, "Error:", response.error);
+            console.error("fetchBacklog() request failed with status:", response.status, "Error:", response.error);
           }
         })
       )
@@ -97,7 +97,7 @@ export class AlbumService {
         if (response.status === 200) {
           this.recentReviews.next(response.data);
         } else {
-          console.log("fetchRecentReviews() request failed with status:", response.status, "Error:", response.error);
+          console.error("fetchRecentReviews() request failed with status:", response.status, "Error:", response.error);
         }
       })
     );
@@ -125,7 +125,7 @@ export class AlbumService {
           if (response.status === 200) {
             this.albums.next(response.body);
           } else {
-            console.log("Request failed with status:", response.status);
+            console.error("Request failed with status:", response.status);
           }
         })
       );
@@ -133,7 +133,7 @@ export class AlbumService {
 
   getAlbumsByArtistName(artistName: string, forceReload = false): Observable<Album[]> {
     debug("getting albums by artist", artistName, "force reload", forceReload);
-    if (!this.albums.value[artistName] || forceReload) {
+    if (!this.discographyFetched.value[artistName] || forceReload) {
       if (forceReload) this.albums.value[artistName] = [];
       this.fetchAlbumsByArtistName(artistName).subscribe();
     }
@@ -153,7 +153,6 @@ export class AlbumService {
     if (!this.albums.value[artist] || forceReload) {
       this.fetchAlbumByName(artist, album).subscribe();
     }
-    console.log(this.albums.value);
 
     return this.albums.pipe(
       map((albums) => albums[artist]),
@@ -167,7 +166,6 @@ export class AlbumService {
   getAlbumById(id: number, artist_id: number): Observable<Album | undefined> {
     const existingAlbum = this.albums.value[artist_id].find((album) => album.id === id);
     if (!existingAlbum) {
-      console.log("Album doesn't exist lol");
     }
     return this.albums.pipe(
       map((albums) => albums[artist_id]),
@@ -187,7 +185,7 @@ export class AlbumService {
           else this.albums.value[artist] = response.data;
           this.albums.next(this.albums.value);
         } else {
-          console.log("Request failed with status:", response.status);
+          console.error("Request failed with status:", response.status);
         }
       })
     );
@@ -211,7 +209,7 @@ export class AlbumService {
             this.albums.value[artist_id] = response.body;
             this.albums.next(this.albums.value);
           } else {
-            console.log("Request failed with status:", response.status);
+            console.error("Request failed with status:", response.status);
           }
         })
       );
@@ -227,10 +225,11 @@ export class AlbumService {
 
         if (response.status === 200) {
           this.albums.value[artistName] = response.data;
-          console.log("NEXT!", artistName, "updated!");
+          this.discographyFetched.value[artistName] = true;
           this.albums.next(this.albums.value);
+          this.discographyFetched.next(this.discographyFetched.value);
         } else {
-          console.log("Request failed with status:", response.status);
+          console.error("Request failed with status:", response.status);
         }
       })
     );
