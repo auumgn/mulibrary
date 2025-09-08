@@ -61,7 +61,7 @@ export class CategoryChartComponent implements OnInit {
   private color: any;
   private phases: Record<string, number> = {};
 
-  private margin = { top: 20, right: 40, bottom: 30, left: 40 };
+  private margin = { top: 0, right: 0, bottom: 10, left: 0 };
   private height = 600 - this.margin.top - this.margin.bottom;
   private width = 0;
   monthRange = 0;
