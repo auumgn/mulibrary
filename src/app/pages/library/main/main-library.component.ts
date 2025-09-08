@@ -2,10 +2,9 @@ import { Component, HostListener, OnInit, ViewChild, ElementRef } from "@angular
 
 import { ScrobbleService } from "src/app/core/services/scrobble.service";
 import { TimeRangeService } from "src/app/core/services/time-range.service";
-/* declare const rangeSlider: any; */
-import "range-slider-input/dist/rangeslider.umd.min.js";
+import rangeSlider from "range-slider-input";
 import "range-slider-input/dist/style.css";
-declare const rangeSlider: any;
+
 @Component({
   selector: "app-main-library",
   templateUrl: "./main-library.component.html",
