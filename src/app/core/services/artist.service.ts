@@ -37,7 +37,7 @@ export class ArtistService {
           if (response.status === 200) {
             this.artistNodes.next(response.body);
           } else {
-            console.log("Request failed with status:", response.status);
+            console.error("Request failed with status:", response.status);
           }
         })
       );
@@ -64,7 +64,7 @@ export class ArtistService {
         if (response.status === 200) {
           return response.data;
         } else {
-          console.log("fetchArtistByName() Request failed:", response, "Error:", response.error);
+          console.error("fetchArtistByName() Request failed:", response, "Error:", response.error);
         }
       }),
       tap((response) => {
@@ -110,7 +110,7 @@ export class ArtistService {
           if (response.status === 200) {
             return response.body;
           } else {
-            console.log("Request failed with status:", response.status);
+            console.error("Request failed with status:", response.status);
           }
         }),
         tap((response) => {

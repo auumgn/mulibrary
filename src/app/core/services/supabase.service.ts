@@ -172,7 +172,6 @@ export class SupabaseService {
               artist: album.album_artist.map((aa: any) => aa.artist.name),
             })) as Album[],
           };
-          console.log(results);
 
           subscriber.next(results);
           subscriber.complete();

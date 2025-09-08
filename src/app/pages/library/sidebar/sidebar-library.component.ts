@@ -35,10 +35,10 @@ export class FlatNode {
 }
 
 @Component({
-    selector: "app-sidebar-library",
-    templateUrl: "sidebar-library.component.html",
-    styleUrls: ["sidebar-library.component.css"],
-    standalone: false
+  selector: "app-sidebar-library",
+  templateUrl: "sidebar-library.component.html",
+  styleUrls: ["sidebar-library.component.css"],
+  standalone: false,
 })
 export class SidebarLibraryComponent implements OnInit {
   data: Data = {};
@@ -59,15 +59,12 @@ export class SidebarLibraryComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
-    
     // TODO: remove the extra "getCategories" call
     //this.router.events.subscribe((sub) => console.log(sub, "sdflkjshdf"))
     this.treeviewService.activeNode$
       .pipe(
         filter((node) => node !== undefined),
         switchMap((node: FlatNode | undefined) => {
-          console.log("activatedRoute params:", node, this.routeAlbum);
-
           if (node!.level === 0) {
             this.routePath = "category";
             this.routeCategory = normalizeName(node!.name);
@@ -92,8 +89,8 @@ export class SidebarLibraryComponent implements OnInit {
 
     if (!this.routePath) {
       this.categoryService.getCategories(true).subscribe((categories: Category[]) => {
-        console.log('test');
-        
+        console.log("test");
+
         categories.map((category) => {
           this.data[category.name] = { name: category.name, type: "category", data: category, level: 0, children: {} };
         });
@@ -103,11 +100,14 @@ export class SidebarLibraryComponent implements OnInit {
   }
 
   loadCategoryPageFromUrl() {
-    return this.categoryService.getCategories().pipe(take(1), map(categories => {
-      this.addCategoriesToDatabase(categories);
-      const categoryNode = this.flatData.find((node) => node.name === this.routeCategory && node.level === 0);
-      if (categoryNode) this.selectNode(categoryNode);
-    }))
+    return this.categoryService.getCategories().pipe(
+      take(1),
+      map((categories) => {
+        this.addCategoriesToDatabase(categories);
+        const categoryNode = this.flatData.find((node) => node.name === this.routeCategory && node.level === 0);
+        if (categoryNode) this.selectNode(categoryNode);
+      })
+    );
   }
 
   loadArtistPageFromUrl() {
@@ -236,8 +236,8 @@ export class SidebarLibraryComponent implements OnInit {
     const name = normalizeName(node.name);
 
     if (navigate) {
-      if (node.level === 0) this.router.navigate(['library', 'category', name])
-      if (node.level === 1) this.router.navigate(['library', 'artist', name]);
+      if (node.level === 0) this.router.navigate(["library", "category", name]);
+      if (node.level === 1) this.router.navigate(["library", "artist", name]);
       if (node.level === 2) {
         const album: Album = node.data as Album;
         const artistName = normalizeName(album.artist!.join("-"));

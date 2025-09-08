@@ -73,8 +73,6 @@ export class AlbumComponent implements OnInit, OnDestroy {
         })
       )
       .subscribe(([album, tracks]) => {
-        console.log(album);
-
         this.length = 0;
         this.trackPlays = 0;
         this.album = album;

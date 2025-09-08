@@ -37,8 +37,6 @@ export class LibrarySearchComponent implements OnInit, OnDestroy {
   ngOnInit() {
     // Subscribe to search input changes and trigger search
     this.searchControl.valueChanges.pipe(takeUntil(this.destroy$)).subscribe((value) => {
-      console.log(value);
-
       this.searchService.search(value || "");
       this.showResults = true;
     });

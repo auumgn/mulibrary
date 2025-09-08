@@ -8,19 +8,13 @@ export class ThemeService {
   private currentTheme: "light" | "dark" = "dark";
 
   constructor(rendererFactory: RendererFactory2) {
-    console.log("akashdkajshdkajshdkjahsdkajshd");
-
     this.renderer = rendererFactory.createRenderer(null, null);
 
     // Initialize from localStorage if available
     const savedTheme = localStorage.getItem("theme") as "light" | "dark" | null;
     if (savedTheme) {
-      console.log(savedTheme, " aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa");
-
       this.setTheme(savedTheme);
     } else {
-      console.log(savedTheme, " bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb");
-
       this.setTheme("dark"); // default
     }
   }

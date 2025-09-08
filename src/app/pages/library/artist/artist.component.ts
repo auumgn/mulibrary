@@ -42,7 +42,6 @@ export class ArtistComponent implements OnInit, OnDestroy {
         switchMap((params) => {
           if (params["artist"]) {
             const { artist } = params;
-            console.log("artist page artist:", artist);
             return combineLatest([
               this.artistService.getArtistByName(artist),
               this.albumService.getAlbumsByArtistName(artist),
