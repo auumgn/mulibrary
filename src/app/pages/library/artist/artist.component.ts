@@ -1,6 +1,6 @@
 import { Component, OnDestroy, OnInit } from "@angular/core";
 import { ActivatedRoute, Router } from "@angular/router";
-import { EMPTY, Subject, combineLatest, switchMap, take, takeUntil } from "rxjs";
+import { EMPTY, Subject, combineLatest, first, switchMap, take, takeUntil } from "rxjs";
 import { AlbumService } from "src/app/core/services/album.service";
 import { ArtistService } from "src/app/core/services/artist.service";
 import { Album } from "src/app/shared/models/album.model";
@@ -45,7 +45,7 @@ export class ArtistComponent implements OnInit, OnDestroy {
             return combineLatest([
               this.artistService.getArtistByName(artist),
               this.albumService.getAlbumsByArtistName(artist),
-            ]).pipe(take(1));
+            ]);
           }
           return EMPTY;
         })
